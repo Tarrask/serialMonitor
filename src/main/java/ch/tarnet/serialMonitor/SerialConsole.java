@@ -18,11 +18,10 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
-import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextPane;
 import javax.swing.JToolBar;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.text.AttributeSet;
@@ -174,16 +173,20 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 		manager.addSerialPortListener(new SerialPortListener() {
 			@Override public void portRemoved(SerialPortEvent event) {}
 			@Override public void portAdded(SerialPortEvent event) {}
-			@Override public void portStatusChanged(SerialPortEvent event) {
-				SerialPortDescriptor descriptor = event.getDescriptor();
-				if(descriptor.getStatus() == Status.OPEN) {
-					openButton.setVisible(false);
-					closeButton.setVisible(true);
-				}
-				else {
-					openButton.setVisible(true);
-					closeButton.setVisible(false);
-				}
+			@Override public void portStatusChanged(final SerialPortEvent event) {
+				SwingUtilities.invokeLater(new Runnable() {
+					@Override public void run() {
+						SerialPortDescriptor descriptor = event.getDescriptor();
+						if(descriptor.getStatus() == Status.OPEN) {
+							openButton.setVisible(false);
+							closeButton.setVisible(true);
+						}
+						else {
+							openButton.setVisible(true);
+							closeButton.setVisible(false);
+						}
+					}
+				});
 			}
 		});
 		
