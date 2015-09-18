@@ -111,10 +111,18 @@ public class SerialManager {
 	
 	private void fireSystemMessageEvent(SerialPortDescriptor descriptor, String message) {
 		System.err.println(descriptor.getName() + " - " + message);
+		SerialMessageEvent event = new SerialMessageEvent(System.currentTimeMillis(), descriptor, message);
+		for(SerialMessageListener listener : messageListeners) {
+			listener.newSystemMessage(event);
+		}
 	}
 	
 	private void fireSerialMessageEvent(SerialPortDescriptor descriptor, String message) {
-		System.out.print(message);
+		System.out.print(descriptor.getName() + " - " + message);
+		SerialMessageEvent event = new SerialMessageEvent(System.currentTimeMillis(), descriptor, message);
+		for(SerialMessageListener listener : messageListeners) {
+			listener.newSerialMessage(event);
+		}
 	}
 
 	private void firePortAddedEvent(SerialPortDescriptor descriptor) {
@@ -130,6 +138,14 @@ public class SerialManager {
 		SerialPortEvent event = new SerialPortEvent(descriptor);
 		for(SerialPortListener listener : portListeners) {
 			listener.portRemoved(event);
+		}
+	}
+	
+	private void firePortStatusChangeEvent(SerialPortDescriptor descriptor) {
+		System.out.println("Fire port status change event: " + descriptor.getName());
+		SerialPortEvent event = new SerialPortEvent(descriptor);
+		for(SerialPortListener listener : portListeners) {
+			listener.portStatusChanged(event);
 		}
 	}
 
@@ -190,6 +206,7 @@ public class SerialManager {
 			// Aquite de l'ouverture du port.
 			descriptor.setStatus(Status.OPEN);
 			manager.fireSystemMessageEvent(descriptor, "Connection with serial port " + descriptor.getName() + " is open.");
+			manager.firePortStatusChangeEvent(descriptor);
 
 			// boucle de lecture, si une erreur survient, on ferme le port simplement. A Chaque série de donnée, on
 			// envoie un event.
@@ -218,6 +235,7 @@ public class SerialManager {
 				//retire le worker de la liste des workers actifs.
 				manager.workers.remove(descriptor);
 				manager.fireSystemMessageEvent(descriptor, "Connection with serial port " + descriptor.getName() + " is close.");
+				manager.firePortStatusChangeEvent(descriptor);
 			}
 		}
 	}
