@@ -1,6 +1,7 @@
 package ch.tarnet.serialMonitor;
 
 import gnu.io.CommPortIdentifier;
+import gnu.io.FakeIdentifier;
 import gnu.io.PortInUseException;
 import gnu.io.SerialPort;
 import gnu.io.UnsupportedCommOperationException;
@@ -12,6 +13,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 
 import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
 
@@ -268,7 +270,7 @@ public class SerialManager {
 		public void run() {
 			while(keepRunning) {
 				// On récupère la liste des ports com visible par RXTX
-				Enumeration<CommPortIdentifier> ports = unsafeCast(CommPortIdentifier.getPortIdentifiers());
+				Enumeration<CommPortIdentifier> ports = getPortIdentifiers();
 				
 				// On test chaque port régulièrement
 				while(ports.hasMoreElements()) {
@@ -321,6 +323,17 @@ public class SerialManager {
 		@SuppressWarnings({ "rawtypes", "unchecked" })
 		private Enumeration<CommPortIdentifier> unsafeCast(Enumeration e) {
 			return (Enumeration<CommPortIdentifier>)e;
+		}
+		
+		
+		private Enumeration<CommPortIdentifier> getPortIdentifiers()  {
+			Vector<CommPortIdentifier> v = new Vector<CommPortIdentifier>();
+			Enumeration<CommPortIdentifier> e = unsafeCast(CommPortIdentifier.getPortIdentifiers());
+			while(e.hasMoreElements()) {
+				v.add(e.nextElement());
+			}
+			v.add(new FakeIdentifier("COM91"));
+			return v.elements();
 		}
 	}
 
