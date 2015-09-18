@@ -1,6 +1,7 @@
 package gnu.io;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -12,7 +13,72 @@ public class FakeIdentifier extends CommPortIdentifier {
 		super(name, null, PORT_SERIAL, new FakeCommDriver());
 	}
 	
+	@Override
+	public void addPortOwnershipListener(CommPortOwnershipListener arg0) {
+		System.out.println("In FakeIdentifier.addPortOwnershipListener");
+		super.addPortOwnershipListener(arg0);
+	}
+	
+	@Override
+	void fireOwnershipEvent(int arg0) {
+		System.out.println("In FakeIdentifier.fireOwnershipEvent: " + arg0);
+		super.fireOwnershipEvent(arg0);
+	}
+	
+	@Override
+	public String getCurrentOwner() {
+		System.out.println("In FakeIdentifier.getCurrentOwner");
+		return super.getCurrentOwner();
+	}
+	
+	@Override
+	public String getName() {
+		System.out.println("In FakeIdentifier.getName");
+		return super.getName();
+	}
+	
+	@Override
+	public int getPortType() {
+		System.out.println("In FakeIdentifier.getPortType");
+		return super.getPortType();
+	}
+	
+	@Override
+	void internalClosePort() {
+		System.out.println("In FakeIdentifier.internalClosePort");
+		super.internalClosePort();
+	}
+	
+	@Override
+	public synchronized boolean isCurrentlyOwned() {
+		System.out.println("In FakeIdentifier.isCurrentlyOwned");
+		return super.isCurrentlyOwned();
+	}
+	
+	@Override
+	public synchronized CommPort open(FileDescriptor arg0) throws UnsupportedCommOperationException {
+		System.out.println("In FakeIdentifier.open");
+		return super.open(arg0);
+	}
+	
+	@Override
+	public CommPort open(String arg0, int arg1) throws PortInUseException {
+		System.out.println("In FakeIdentifier.open");
+		return super.open(arg0, arg1);
+	}
+	
+	@Override
+	public void removePortOwnershipListener(CommPortOwnershipListener arg0) {
+		System.out.println("In FakeIdentifier.removePortOwnershipListener");
+		super.removePortOwnershipListener(arg0);
+	}
+	
 	static class FakePort extends SerialPort {
+		@Override
+		public void close() {
+			System.out.println("In FakePort.close");
+			super.close();
+		}
 		@Override
 		public void disableReceiveFraming() {
 			System.out.println("In FakePort.disableReceiveFraming");

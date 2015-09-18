@@ -172,6 +172,7 @@ public class SerialManager {
 			// tente l'ouverture d'un port flux d'entré provenant du port série. En reste là si quoi que ce soit
 			// se déroule mal
 			try {
+				System.out.println(descriptor.getPortIdentifier().getClass());
 				port = (SerialPort)descriptor.getPortIdentifier().open(getClass().getName(), openIndex++);
 				port.setSerialPortParams(descriptor.getSpeed(), SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
 				in = new BufferedInputStream(port.getInputStream());

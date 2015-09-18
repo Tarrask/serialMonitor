@@ -7,7 +7,9 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.swing.AbstractAction;
 import javax.swing.ComboBoxModel;
@@ -18,6 +20,7 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.JToolBar;
@@ -36,14 +39,19 @@ import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
 public class SerialConsole extends JFrame implements SerialMessageListener {
 
 	private SerialManager manager;
+	private Set<SerialPortDescriptor> watchedPorts;
+	
 	
 	// Main gui components
 	private JMenuBar menuBar;
 	private JToolBar toolBar;
+	private StyledDocument logDocument;
+	private Style systemStyle;
 	
 	public SerialConsole(SerialManager manager) {
 		this.manager = manager;
 		this.manager.addSerialMessageListener(this);
+		this.watchedPorts = new HashSet<>();
 		buildGUI();
 	}
 	
@@ -107,6 +115,7 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 		
 		// les boutons
 		toolBar.addSeparator();
+		
 		final JButton openButton = new JButton(new AbstractAction("Open") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -117,6 +126,7 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 		});
 		openButton.setEnabled(portComboModel.getSelectedItem() != null);
 		toolBar.add(openButton);
+		
 		final JButton closeButton = new JButton(new AbstractAction("Close") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -199,44 +209,29 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 		textPane.setEditable(false);
 		textPane.setMargin(new Insets(5, 5, 5, 5));
 		
-		StyledDocument styledDoc = textPane.getStyledDocument();
-		StyleContext styleContext = StyleContext.getDefaultStyleContext();
-		Style defaultStyle = styledDoc.getStyle("default");
+		
+		logDocument = textPane.getStyledDocument();
+		Style defaultStyle = logDocument.getStyle("default");
 		defaultStyle.addAttribute(StyleConstants.FontFamily, "Courier New");
-		AttributeSet red = styleContext.addAttribute(styleContext.getEmptySet(), StyleConstants.Foreground, Color.red);
 		
+		systemStyle = logDocument.addStyle("red", defaultStyle);
+		StyleConstants.setForeground(systemStyle, Color.red);
 		
-		try {
-			Enumeration<?> styles = styleContext.getStyleNames();
-			while(styles.hasMoreElements()) {
-				String styleName = styles.nextElement().toString();
-				System.out.println(styleName);
-				Style style = styleContext.getStyle(styleName);
-				Enumeration<?> attrs = style.getAttributeNames();
-				while(attrs.hasMoreElements()) {
-					System.out.println("   " + attrs.nextElement());
-				}
-			}
-			//AttributeSet red = cont.addAttribute(cont.getEmptySet(), StyleConstants.Foreground, Color.red);
-			styledDoc.insertString(0, "Empty for now\n", styledDoc.getStyle("default"));
-			styledDoc.insertString(styledDoc.getLength(), "Empty for now", red);
-		}
-		catch(BadLocationException e) {}
-		
-		return new JScrollPane(textPane);
+		JScrollPane scrollPane = new JScrollPane(textPane);
+		scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+		scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+		return scrollPane;
 	}
 	
 
 
-	private void watchPort(SerialPortDescriptor selectedPort) {
-		// TODO Auto-generated method stub
-		
+	private void watchPort(SerialPortDescriptor descriptor) {
+		watchedPorts.add(descriptor);
 	}
 
 
-	private void unwatchPort(SerialPortDescriptor selectedPort) {
-		// TODO Auto-generated method stub
-		
+	private void unwatchPort(SerialPortDescriptor descriptor) {
+		watchedPorts.remove(descriptor);
 	}
 	
 	@Override
@@ -247,12 +242,32 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 
 	@Override
 	public void newSystemMessage(SerialMessageEvent event) {
-		System.err.println(event.getMessage());
+		System.err.println(event.getMessage() + "\n");
+		try {
+			logDocument.insertString(logDocument.getLength(), event.getMessage() + "\n", systemStyle);
+		}
+		catch(BadLocationException e) {
+			// ne devrait jamais survenir, ne semble pas grave, au pire aucun text ne sera plus écrit.
+			// on log l'erreur mais poursuivons l'execution du programme.
+			System.err.println(e.getMessage());
+			e.printStackTrace();
+		}
 	}
 
 	@Override
 	public void newSerialMessage(SerialMessageEvent event) {
 		System.out.print(event.getMessage());
+		if(watchedPorts.contains(event.getDescriptor())) {
+			try {
+				logDocument.insertString(logDocument.getLength(), event.getMessage(), null);
+			}
+			catch(BadLocationException e) {
+				// ne devrait jamais survenir, ne semble pas grave, au pire aucun text ne sera plus écrit.
+				// on log l'erreur mais poursuivons l'execution du programme.
+				System.err.println(e.getMessage());
+				e.printStackTrace();
+			}
+		}
 	}
 }
 
