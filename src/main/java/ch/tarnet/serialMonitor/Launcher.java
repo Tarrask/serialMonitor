@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
 /**
  * le point d'entrée du programme, il créé juste une première console et attend que
@@ -15,25 +17,39 @@ import javax.swing.SwingUtilities;
  */
 public class Launcher {
 	
-	SerialManager manager;
-	List<SerialConsole> consoles;
+	private static Launcher instance;
+	private SerialManager manager;
+	private List<SerialConsole> consoles;
+	private int consoleIndex = 0;
+	private ExitWhenLastClosing closingListener;
 	
 	public Launcher() {
+		instance = this;
 		manager = new SerialManager();
 		consoles = new ArrayList<SerialConsole>();
+		closingListener = new ExitWhenLastClosing();
+	}
+	
+	public static Launcher getInstance() {
+		return instance;
+	}
+	
+	public SerialConsole newConsole() {
+		SerialConsole console = new SerialConsole(manager);
+		console.setTitle("SerialMonitor Window #" + consoleIndex++);
+		consoles.add(console);
+		console.addWindowListener(closingListener);
+		console.setLocationRelativeTo(null);
+		console.setVisible(true);
+		
+		return console;
 	}
 	
 	public void run() {
 		// planifie la création et l'affichage d'une première fenetre console
 		SwingUtilities.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				SerialConsole console = new SerialConsole(manager);
-				console.setTitle("SerialMonitor Window #1");
-				consoles.add(console);
-				console.addWindowListener(new ExitWhenLastClosing());
-				console.setLocationRelativeTo(null);
-				console.setVisible(true);
+			@Override public void run() {
+				newConsole();
 			}
 		});
 	}
@@ -42,6 +58,24 @@ public class Launcher {
 	 * on créé une instance et l'execute, pas forcément utile pour l'instant ... 
 	 */
 	public static void main(String[] args) {
+		try {
+            // Set cross-platform Java L&F (also called "Metal")
+	        UIManager.setLookAndFeel(
+	            UIManager.getSystemLookAndFeelClassName());
+	    } 
+	    catch (UnsupportedLookAndFeelException e) {
+	       // handle exception
+	    }
+	    catch (ClassNotFoundException e) {
+	       // handle exception
+	    }
+	    catch (InstantiationException e) {
+	       // handle exception
+	    }
+	    catch (IllegalAccessException e) {
+	       // handle exception
+	    }
+		
 		new Launcher().run();
 	}
 	

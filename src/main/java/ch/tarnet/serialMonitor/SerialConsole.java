@@ -69,6 +69,13 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 		menuBar = new JMenuBar();
 		JMenu fileMenu = new JMenu("File");
 		menuBar.add(fileMenu);
+		
+		fileMenu.add(new JMenuItem(new AbstractAction("New console ...") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Launcher.getInstance().newConsole();
+			}
+		}));
 		fileMenu.add(new JMenuItem(new AbstractAction("Quit") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -106,14 +113,17 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 			public void actionPerformed(ActionEvent e) {
 				SerialPortDescriptor selectedPort = (SerialPortDescriptor)portComboModel.getSelectedItem();
 				manager.openPort(selectedPort);
+				watchPort(selectedPort);
 			}
 		});
+		openButton.setEnabled(portComboModel.getSelectedItem() != null);
 		toolBar.add(openButton);
 		final JButton closeButton = new JButton(new AbstractAction("Close") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				SerialPortDescriptor selectedPort = (SerialPortDescriptor)portComboModel.getSelectedItem();
 				manager.closePort(selectedPort);
+				unwatchPort(selectedPort);
 			}
 		});
 		closeButton.setVisible(false);
@@ -128,13 +138,22 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 			@Override public void intervalAdded(ListDataEvent e) {}
 			@Override public void contentsChanged(ListDataEvent e) {
 				SerialPortDescriptor descriptor = (SerialPortDescriptor)portComboModel.getSelectedItem();
-				if(descriptor.getStatus() == Status.OPEN) {
-					openButton.setVisible(false);
-					closeButton.setVisible(true);
+				if(descriptor == null) {
+					openButton.setVisible(true);
+					openButton.setEnabled(false);
+					closeButton.setVisible(false);
 				}
 				else {
-					openButton.setVisible(true);
-					closeButton.setVisible(false);
+					if(descriptor.getStatus() == Status.OPEN) {
+						openButton.setVisible(false);
+						openButton.setEnabled(false);
+						closeButton.setVisible(true);
+					}
+					else {
+						openButton.setVisible(true);
+						openButton.setEnabled(true);
+						closeButton.setVisible(false);
+					}
 				}
 			}
 		});
@@ -204,6 +223,19 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 		return new JScrollPane(textPane);
 	}
 	
+
+
+	private void watchPort(SerialPortDescriptor selectedPort) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	private void unwatchPort(SerialPortDescriptor selectedPort) {
+		// TODO Auto-generated method stub
+		
+	}
+	
 	@Override
 	public void setTitle(String title) {
 		super.setTitle(title);
@@ -212,14 +244,12 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 
 	@Override
 	public void newSystemMessage(SerialMessageEvent event) {
-		// TODO Auto-generated method stub
-		
+		System.err.println(event.getMessage());
 	}
 
 	@Override
 	public void newSerialMessage(SerialMessageEvent event) {
-		// TODO Auto-generated method stub
-		
+		System.out.print(event.getMessage());
 	}
 }
 

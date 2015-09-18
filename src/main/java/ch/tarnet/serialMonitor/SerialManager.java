@@ -110,7 +110,6 @@ public class SerialManager {
 	
 	
 	private void fireSystemMessageEvent(SerialPortDescriptor descriptor, String message) {
-		System.err.println(descriptor.getName() + " - " + message);
 		SerialMessageEvent event = new SerialMessageEvent(System.currentTimeMillis(), descriptor, message);
 		for(SerialMessageListener listener : messageListeners) {
 			listener.newSystemMessage(event);
@@ -118,7 +117,6 @@ public class SerialManager {
 	}
 	
 	private void fireSerialMessageEvent(SerialPortDescriptor descriptor, String message) {
-		System.out.print(descriptor.getName() + " - " + message);
 		SerialMessageEvent event = new SerialMessageEvent(System.currentTimeMillis(), descriptor, message);
 		for(SerialMessageListener listener : messageListeners) {
 			listener.newSerialMessage(event);
@@ -126,7 +124,6 @@ public class SerialManager {
 	}
 
 	private void firePortAddedEvent(SerialPortDescriptor descriptor) {
-		System.out.println("Fire port added event: " + descriptor.getName());
 		SerialPortEvent event = new SerialPortEvent(descriptor);
 		for(SerialPortListener listener : portListeners) {
 			listener.portAdded(event);
@@ -134,7 +131,6 @@ public class SerialManager {
 	}
 
 	private void firePortRemovedEvent(SerialPortDescriptor descriptor) {
-		System.out.println("Fire port removed event: " + descriptor.getName());
 		SerialPortEvent event = new SerialPortEvent(descriptor);
 		for(SerialPortListener listener : portListeners) {
 			listener.portRemoved(event);
@@ -142,7 +138,6 @@ public class SerialManager {
 	}
 	
 	private void firePortStatusChangeEvent(SerialPortDescriptor descriptor) {
-		System.out.println("Fire port status change event: " + descriptor.getName());
 		SerialPortEvent event = new SerialPortEvent(descriptor);
 		for(SerialPortListener listener : portListeners) {
 			listener.portStatusChanged(event);
