@@ -24,8 +24,12 @@ public class Launcher {
 	private ExitWhenLastClosing closingListener;
 	
 	public Launcher() {
+		this(new PortWatcher());
+	}
+	
+	public Launcher(PortWatcher portWatcher) {
 		instance = this;
-		manager = new SerialManager();
+		manager = new SerialManager(portWatcher);
 		consoles = new ArrayList<SerialConsole>();
 		closingListener = new ExitWhenLastClosing();
 	}
@@ -49,6 +53,24 @@ public class Launcher {
 		// planifie la création et l'affichage d'une première fenetre console
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override public void run() {
+				try {
+		            // Set cross-platform Java L&F (also called "Metal")
+			        UIManager.setLookAndFeel(
+			            UIManager.getSystemLookAndFeelClassName());
+			    } 
+			    catch (UnsupportedLookAndFeelException e) {
+			       // handle exception
+			    }
+			    catch (ClassNotFoundException e) {
+			       // handle exception
+			    }
+			    catch (InstantiationException e) {
+			       // handle exception
+			    }
+			    catch (IllegalAccessException e) {
+			       // handle exception
+			    }
+				
 				newConsole();
 			}
 		});
@@ -58,24 +80,6 @@ public class Launcher {
 	 * on créé une instance et l'execute, pas forcément utile pour l'instant ... 
 	 */
 	public static void main(String[] args) {
-		try {
-            // Set cross-platform Java L&F (also called "Metal")
-	        UIManager.setLookAndFeel(
-	            UIManager.getSystemLookAndFeelClassName());
-	    } 
-	    catch (UnsupportedLookAndFeelException e) {
-	       // handle exception
-	    }
-	    catch (ClassNotFoundException e) {
-	       // handle exception
-	    }
-	    catch (InstantiationException e) {
-	       // handle exception
-	    }
-	    catch (IllegalAccessException e) {
-	       // handle exception
-	    }
-		
 		new Launcher().run();
 	}
 	

@@ -1,9 +1,13 @@
 package ch.tarnet.serialMonitor;
 
+public class TestApplication extends Launcher {
+	
+	public TestApplication() {
+		super(new FakePortWatcher());
+	}
 
-public class TestApplication {
-	public static void main(String[] args) throws Exception {
-		Launcher.main(args);
+	public static void main(String[] args) {
+		new TestApplication().run();
 	}
 }
 

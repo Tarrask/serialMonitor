@@ -1,7 +1,5 @@
 package ch.tarnet.serialMonitor;
 
-import gnu.io.CommPortIdentifier;
-import gnu.io.FakeIdentifier;
 import gnu.io.PortInUseException;
 import gnu.io.SerialPort;
 import gnu.io.UnsupportedCommOperationException;
@@ -9,11 +7,9 @@ import gnu.io.UnsupportedCommOperationException;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 
 import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
 
@@ -35,8 +31,8 @@ import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
  *
  */
 public class SerialManager {
-	private static final int PORT_WATCHER_WAIT = 60000;
-	public 	static final int DEFAULT_SPEED = 9600;
+	public static final int PORT_WATCHER_WAIT = 60000;
+	public static final int DEFAULT_SPEED = 9600;
 	
 	
 	private List<SerialMessageListener> messageListeners = new ArrayList<SerialMessageListener>();
@@ -46,11 +42,15 @@ public class SerialManager {
 	private Map<SerialPortDescriptor, SerialWorker> workers = new HashMap<SerialPortDescriptor, SerialManager.SerialWorker>();
 	
 	public SerialManager() {
-		// démarre le port watcher qui surveille l'état des différents ports série
-		portWatcher = new PortWatcher();
-		portWatcher.start();
+		this(new PortWatcher());
 	}
 	
+	public SerialManager(PortWatcher portWatcher) {
+		// démarre le port watcher qui surveille l'état des différents ports série
+		this.portWatcher = portWatcher;
+		this.portWatcher.setSerialManager(this);
+		this.portWatcher.start();
+	}
 	/**
 	 * Retourne la liste des ports disponible actuellement en possession du portWatcher.
 	 * Cette fonction ne déclanche pas un refresh.
@@ -125,14 +125,14 @@ public class SerialManager {
 		}
 	}
 
-	private void firePortAddedEvent(SerialPortDescriptor descriptor) {
+	void firePortAddedEvent(SerialPortDescriptor descriptor) {
 		SerialPortEvent event = new SerialPortEvent(descriptor);
 		for(SerialPortListener listener : portListeners) {
 			listener.portAdded(event);
 		}
 	}
 
-	private void firePortRemovedEvent(SerialPortDescriptor descriptor) {
+	void firePortRemovedEvent(SerialPortDescriptor descriptor) {
 		SerialPortEvent event = new SerialPortEvent(descriptor);
 		for(SerialPortListener listener : portListeners) {
 			listener.portRemoved(event);
@@ -237,103 +237,6 @@ public class SerialManager {
 			}
 		}
 	}
-	
-	private class PortWatcher extends Thread {
-		/**
-		 * Le <code>PortWatcher</code> sera en écoute temps que <code>keepRunning</code> est vrai.
-		 */
-		private boolean keepRunning = true;
-		/**
-		 * La list des ports détecté par le Watcher
-		 */
-		private HashMap<CommPortIdentifier, SerialPortDescriptor> portsMap = new HashMap<CommPortIdentifier, SerialPortDescriptor>();
-		/**
-		 * la liste suivante détecté par le Watcher, on interverti les deux listes pour limiter la création d'objet
-		 * volumineux
-		 */
-		private HashMap<CommPortIdentifier, SerialPortDescriptor> nextPortsMap = new HashMap<CommPortIdentifier, SerialPortDescriptor>();
-		
-		public PortWatcher() {
-			super("SerialManager.PortWatcher");
-			this.setDaemon(true);
-		}
-		
-		synchronized public List<SerialPortDescriptor> getAvailablePorts() {
-			return new ArrayList<SerialPortDescriptor>(portsMap.values()); 
-		}
-
-		@Override
-		public void run() {
-			while(keepRunning) {
-				// On récupère la liste des ports com visible par RXTX
-				Enumeration<CommPortIdentifier> ports = getPortIdentifiers();
-				
-				// On test chaque port régulièrement
-				while(ports.hasMoreElements()) {
-					CommPortIdentifier portId = ports.nextElement();
-					// on ne s'interesse qu'aux ports série
-					if(portId.getPortType() == CommPortIdentifier.PORT_SERIAL) {
-						if(portsMap.containsKey(portId)) {
-							nextPortsMap.put(portId, portsMap.get(portId));
-						}
-						else {
-							SerialPortDescriptor descriptor = new SerialPortDescriptor(portId, DEFAULT_SPEED);
-							nextPortsMap.put(portId, descriptor);
-							firePortAddedEvent(descriptor);
-						}
-					}
-				}
-				
-				// ainsi que ceux qu'on connait déjà
-				for(CommPortIdentifier oldPortId : portsMap.keySet()) {
-					if(nextPortsMap.containsKey(oldPortId)) {
-						// tout va bien
-					}
-					else {
-						firePortRemovedEvent(portsMap.get(oldPortId));
-					}
-				}
-				
-				// on inverse la liste actuelle avec la nouvelle liste et on vide la future nouvelle liste.
-				HashMap<CommPortIdentifier, SerialPortDescriptor> tempPortsMap = portsMap;
-				portsMap = nextPortsMap;
-				nextPortsMap = tempPortsMap;
-				nextPortsMap.clear();
-				
-				// On veille un certain temps
-				try {
-					synchronized(this) {
-						this.wait(PORT_WATCHER_WAIT);
-					}
-				} catch (InterruptedException e) {
-					System.out.println("SerialWatcher force refresh.");
-				}
-			}
-		}
-		
-		/**
-		 * Juste pour ne pas avoir de warrning dans l'éditeur et limiter la portée de <code>SuppressWarnings</code>
-		 * @param e une Enumeration contenant des <code>CommPortIdentifier</code>
-		 * @return l'<code>Enumeration</code> casté de façon non sure et <code>Enumeration&lt;CommPortIdentifer></code>
-		 */
-		@SuppressWarnings({ "rawtypes", "unchecked" })
-		private Enumeration<CommPortIdentifier> unsafeCast(Enumeration e) {
-			return (Enumeration<CommPortIdentifier>)e;
-		}
-		
-		
-		private Enumeration<CommPortIdentifier> getPortIdentifiers()  {
-		/*	Vector<CommPortIdentifier> v = new Vector<CommPortIdentifier>();
-			Enumeration<CommPortIdentifier> e = unsafeCast(CommPortIdentifier.getPortIdentifiers());
-			while(e.hasMoreElements()) {
-				v.add(e.nextElement());
-			}
-			v.add(new FakeIdentifier("COM91"));
-			return v.elements();*/
-			return unsafeCast(CommPortIdentifier.getPortIdentifiers());
-		}
-	}
-
 }
 
 

@@ -32,11 +32,24 @@ import javax.swing.text.StyledDocument;
 
 import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
 
+/**
+ * Une fenêtre permettant d'afficher les communications séries. Plusieurs SerialConsole
+ * peuvent être ouverte simultanément, elle partage toute un unique SerialManager, qui
+ * gère les communications bas niveau. Cela permet à plusieurs fenêtre d'afficher le même
+ * flux alors que les communications séries sont normalement exclusive.
+ * 
+ * @author tarrask
+ */
 public class SerialConsole extends JFrame implements SerialMessageListener {
 
+	/**
+	 * Le manager en charge des communications
+	 */
 	private SerialManager manager;
+	/**
+	 * L'ensemble des ports actuellement écouté, afin de filtrer les messages retourné par le manager.
+	 */
 	private Set<SerialPortDescriptor> watchedPorts;
-	
 	
 	// Main gui components
 	private JMenuBar menuBar;
