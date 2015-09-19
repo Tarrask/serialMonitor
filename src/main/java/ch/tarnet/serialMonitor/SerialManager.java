@@ -323,13 +323,14 @@ public class SerialManager {
 		
 		
 		private Enumeration<CommPortIdentifier> getPortIdentifiers()  {
-			Vector<CommPortIdentifier> v = new Vector<CommPortIdentifier>();
+		/*	Vector<CommPortIdentifier> v = new Vector<CommPortIdentifier>();
 			Enumeration<CommPortIdentifier> e = unsafeCast(CommPortIdentifier.getPortIdentifiers());
 			while(e.hasMoreElements()) {
 				v.add(e.nextElement());
 			}
 			v.add(new FakeIdentifier("COM91"));
-			return v.elements();
+			return v.elements();*/
+			return unsafeCast(CommPortIdentifier.getPortIdentifiers());
 		}
 	}
 

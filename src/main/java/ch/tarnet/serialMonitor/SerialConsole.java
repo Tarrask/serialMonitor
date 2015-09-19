@@ -6,7 +6,6 @@ import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -20,18 +19,15 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
-import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
-import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
-import javax.swing.text.StyleContext;
 import javax.swing.text.StyledDocument;
 
 import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
@@ -47,6 +43,11 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 	private JToolBar toolBar;
 	private StyledDocument logDocument;
 	private Style systemStyle;
+	private JComboBox<Integer> speedCombo;
+	private JButton openButton;
+	private JButton closeButton;
+	private JButton unwatchButton;
+	private JButton watchButton;
 	
 	public SerialConsole(SerialManager manager) {
 		this.manager = manager;
@@ -108,15 +109,15 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 		}));
 		toolBar.addSeparator();
 		
-		// La comboBox listant les vitesses disponibles
-		final JComboBox<Integer> speedCombo = new JComboBox<Integer>(new Integer[] {9600, 19200});
+		speedCombo = new JComboBox<Integer>(new Integer[] {4800, 9600, 19200, 38400, 57600, 115200, 230400, 250000});
 		speedCombo.setMaximumSize(new Dimension(100, Integer.MAX_VALUE));
+		speedCombo.setSelectedItem(SerialManager.DEFAULT_SPEED);
 		toolBar.add(speedCombo);
 		
 		// les boutons
 		toolBar.addSeparator();
 		
-		final JButton openButton = new JButton(new AbstractAction("Open") {
+		openButton = new JButton(new AbstractAction("Open") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				SerialPortDescriptor selectedPort = (SerialPortDescriptor)portComboModel.getSelectedItem();
@@ -124,10 +125,9 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 				watchPort(selectedPort);
 			}
 		});
-		openButton.setEnabled(portComboModel.getSelectedItem() != null);
 		toolBar.add(openButton);
 		
-		final JButton closeButton = new JButton(new AbstractAction("Close") {
+		closeButton = new JButton(new AbstractAction("Close") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				SerialPortDescriptor selectedPort = (SerialPortDescriptor)portComboModel.getSelectedItem();
@@ -135,9 +135,25 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 				unwatchPort(selectedPort);
 			}
 		});
-		closeButton.setVisible(false);
 		toolBar.add(closeButton);
-		toolBar.add(new JButton("Display"));
+		watchButton = new JButton(new AbstractAction("Watch") {
+			@Override public void actionPerformed(ActionEvent e) {
+				SerialPortDescriptor selectedPort = (SerialPortDescriptor)portComboModel.getSelectedItem();
+				watchPort(selectedPort);
+				setSelectedPort(selectedPort);
+			}
+		});
+		toolBar.add(watchButton);
+		unwatchButton = new JButton(new AbstractAction("Unwatch") {
+			@Override public void actionPerformed(ActionEvent e) {
+				SerialPortDescriptor selectedPort = (SerialPortDescriptor)portComboModel.getSelectedItem();
+				unwatchPort(selectedPort);
+				setSelectedPort(selectedPort);
+			}
+		});
+		toolBar.add(unwatchButton);
+		
+		
 		
 		// On relie le tout au moyen d'events.
 		
@@ -146,24 +162,7 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 			@Override public void intervalRemoved(ListDataEvent e) {}
 			@Override public void intervalAdded(ListDataEvent e) {}
 			@Override public void contentsChanged(ListDataEvent e) {
-				SerialPortDescriptor descriptor = (SerialPortDescriptor)portComboModel.getSelectedItem();
-				if(descriptor == null) {
-					openButton.setVisible(true);
-					openButton.setEnabled(false);
-					closeButton.setVisible(false);
-				}
-				else {
-					if(descriptor.getStatus() == Status.OPEN) {
-						openButton.setVisible(false);
-						openButton.setEnabled(false);
-						closeButton.setVisible(true);
-					}
-					else {
-						openButton.setVisible(true);
-						openButton.setEnabled(true);
-						closeButton.setVisible(false);
-					}
-				}
+				setSelectedPort((SerialPortDescriptor)portComboModel.getSelectedItem());
 			}
 		});
 		
@@ -181,29 +180,61 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 		
 		// On écoute les changements de status des ports, et on met à jour les boutons le cas échéant.
 		manager.addSerialPortListener(new SerialPortListener() {
-			@Override public void portRemoved(SerialPortEvent event) {}
+			@Override public void portRemoved(SerialPortEvent event) {
+				SerialPortDescriptor descriptor = event.getDescriptor();
+				if(watchedPorts.contains(descriptor)) {
+					watchedPorts.remove(descriptor);
+				}
+			}
 			@Override public void portAdded(SerialPortEvent event) {}
 			@Override public void portStatusChanged(final SerialPortEvent event) {
 				SwingUtilities.invokeLater(new Runnable() {
 					@Override public void run() {
-						SerialPortDescriptor descriptor = event.getDescriptor();
-						if(descriptor.getStatus() == Status.OPEN) {
-							openButton.setVisible(false);
-							closeButton.setVisible(true);
-						}
-						else {
-							openButton.setVisible(true);
-							closeButton.setVisible(false);
-						}
+						setSelectedPort(event.getDescriptor());
 					}
 				});
 			}
 		});
 		
+		setSelectedPort((SerialPortDescriptor)portComboModel.getSelectedItem());
 		
 		return toolBar;
 	}
 	
+	protected void setSelectedPort(SerialPortDescriptor descriptor) {
+		if(descriptor == null) {
+			openButton.setVisible(true);
+			openButton.setEnabled(false);
+			closeButton.setVisible(false);
+			watchButton.setEnabled(false);
+			unwatchButton.setEnabled(false);
+		}
+		else {
+			if(descriptor.getStatus() == Status.OPEN) {
+				openButton.setVisible(false);
+				openButton.setEnabled(false);
+				closeButton.setVisible(true);
+				watchButton.setEnabled(true);
+				unwatchButton.setEnabled(true);
+			}
+			else {
+				openButton.setVisible(true);
+				openButton.setEnabled(true);
+				closeButton.setVisible(false);
+				watchButton.setEnabled(false);
+				unwatchButton.setEnabled(false);
+			}
+			if(watchedPorts.contains(descriptor)) {
+				watchButton.setVisible(false);
+				unwatchButton.setVisible(true);
+			}
+			else {
+				watchButton.setVisible(true);
+				unwatchButton.setVisible(false);
+			}
+		}
+	}
+
 	private JComponent buildTextPane() {
 		JTextPane textPane = new JTextPane();
 		textPane.setEditable(false);
