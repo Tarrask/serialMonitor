@@ -7,6 +7,7 @@ public class TestApplication extends Launcher {
 	}
 
 	public static void main(String[] args) {
+		System.setProperty("java.util.prefs.PreferencesFactory.defaultFile", "test.config");
 		new TestApplication().run();
 	}
 }
