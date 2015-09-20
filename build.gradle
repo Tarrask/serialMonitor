@@ -1,0 +1,40 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'application'
+
+sourceCompatibility = 1.7
+version = '1.0'
+mainClassName = 'ch.tarnet.serialMonitor.Launcher'
+
+jar {
+	manifest {
+		attributes 'Implementation-Title': 'SerialMonitor',
+				   'Implementation-Version': version
+	}
+}
+
+test {
+	systemProperties 'java.util.prefs.PreferencesFactory.defaultFile': 'test.config'
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	compile files('lib/rxtx/RXTXcomm.jar')
+	testCompile group: 'junit', name: 'junit', version: '4.+'
+}
+
+run {
+	systemProperty 'java.library.path', file('libs/rxtx')
+}
+
+eclipse.classpath.file.withXml { XmlProvider provider ->
+    provider.asNode().classpathentry.findAll{it.@path.endsWith('RXTXcomm.jar')}
+    .each {
+    	println "hello"
+        it.appendNode('attributes')
+                .appendNode('attribute', [name:'org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY', value:'serialMonitor/lib/rxtx'])
+    }
+}
