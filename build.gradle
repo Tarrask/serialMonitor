@@ -6,16 +6,6 @@ sourceCompatibility = 1.7
 version = '1.0'
 mainClassName = 'ch.tarnet.serialMonitor.Launcher'
 
-jar {
-	manifest {
-		attributes 'Implementation-Title': 'SerialMonitor',
-				   'Implementation-Version': version
-	}
-}
-
-test {
-	systemProperties 'java.util.prefs.PreferencesFactory.defaultFile': 'test.config'
-}
 
 repositories {
 	mavenCentral()
@@ -26,15 +16,47 @@ dependencies {
 	testCompile group: 'junit', name: 'junit', version: '4.+'
 }
 
-run {
-	systemProperty 'java.library.path', file('libs/rxtx')
+build {
+	copy {
+		from 'lib'
+		into 'build/libs/lib'
+	}
 }
 
+jar {
+	manifest {
+		attributes 'Main-Class': mainClassName,
+			'Implementation-Title': 'SerialMonitor',
+			'Implementation-Version': version,
+			'Class-Path': 'lib/rxtx/RXTXComm.jar',
+			'Library-Path': 'lib/rxtx/'
+		
+	}
+}
+
+run {
+	systemProperty 'java.library.path', file('lib/rxtx')
+}
+
+test {
+	systemProperty 'java.library.path', file('lib/rxtx')
+}
+
+/**
+ * On ajoute la nature Gradle au projet, après un gradle cleanEclipse eclipse
+ */
+eclipse.project {
+  natures 'org.springsource.ide.eclipse.gradle.core.nature'
+}
+
+/**
+ * Dirty à souhait, pour ajouter les dll de rxtx au classpath eclipse
+ */
 eclipse.classpath.file.withXml { XmlProvider provider ->
-    provider.asNode().classpathentry.findAll{it.@path.endsWith('RXTXcomm.jar')}
-    .each {
-    	println "hello"
-        it.appendNode('attributes')
-                .appendNode('attribute', [name:'org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY', value:'serialMonitor/lib/rxtx'])
+	provider.asNode().classpathentry.findAll{it.@path.endsWith('RXTXcomm.jar')}.each {
+		it.appendNode('attributes').appendNode('attribute', [
+			name:'org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY', 
+			value:'serialMonitor/lib/rxtx'
+		])
     }
 }

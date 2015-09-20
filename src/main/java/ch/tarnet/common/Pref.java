@@ -4,10 +4,14 @@ import java.util.prefs.Preferences;
 
 public class Pref {
 
-	static private Preferences pref = Preferences.systemRoot();
+	static private Preferences pref = null;
+	
+	static public void loadPreferences() {
+		pref = Preferences.systemRoot();
+	}
 	
 	static public String get(String key) {
-		return get(key, null);
+		return pref.get(key, null);
 	}
 	
 	static public String get(String key, String def) {
@@ -15,7 +19,7 @@ public class Pref {
 	}
 	
 	static public String getString(String key, String def) {
-		return get(key, def);
+		return pref.get(key, def);
 	}
 	
 	static public boolean getBoolean(String key, boolean def) {

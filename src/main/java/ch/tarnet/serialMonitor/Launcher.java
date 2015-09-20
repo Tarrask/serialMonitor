@@ -32,6 +32,7 @@ public class Launcher {
 	
 	public Launcher(PortWatcher portWatcher) {
 		System.setProperty("java.util.prefs.PreferencesFactory", "ch.tarnet.common.ApplicationPreferencesFactory");
+		Pref.loadPreferences();
 		
 		instance = this;
 		manager = new SerialManager(portWatcher);
