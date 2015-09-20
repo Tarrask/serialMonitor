@@ -2,22 +2,15 @@ package ch.tarnet.serialMonitor;
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
-import java.util.PropertyResourceBundle;
-import java.util.ResourceBundle;
-import java.util.prefs.Preferences;
 
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
-import ch.tarnet.common.ApplicationPreferences;
+import ch.tarnet.common.Pref;
 
 /**
  * le point d'entrée du programme, il créé juste une première console et attend que
@@ -31,8 +24,7 @@ public class Launcher {
 	private SerialManager manager;
 	private List<SerialConsole> consoles;
 	private int consoleIndex = 0;
-	private ExitWhenLastClosing closingListener;
-	private Preferences config;
+	private ExitWhenLastClosing closingListener; 
 	
 	public Launcher() {
 		this(new PortWatcher());
@@ -40,7 +32,6 @@ public class Launcher {
 	
 	public Launcher(PortWatcher portWatcher) {
 		System.setProperty("java.util.prefs.PreferencesFactory", "ch.tarnet.common.ApplicationPreferencesFactory");
-		config = Preferences.systemRoot();
 		
 		instance = this;
 		manager = new SerialManager(portWatcher);
@@ -52,15 +43,12 @@ public class Launcher {
 		return instance;
 	}
 	
-	public Preferences getConfig() {
-		return config;
-	}
-	
 	public SerialConsole newConsole() {
 		SerialConsole console = new SerialConsole(manager);
-		console.setTitle(MessageFormat.format(getConfig().get("title", "No title {0}"), consoleIndex++));
+		console.setTitle(MessageFormat.format(Pref.get("title", "No title {0}"), consoleIndex++));
 		consoles.add(console);
 		console.addWindowListener(closingListener);
+		console.setSize(Pref.getInt("consoleWidth", 400), Pref.getInt("consoleHeight", 300));
 		console.setLocationRelativeTo(null);
 		console.setVisible(true);
 		

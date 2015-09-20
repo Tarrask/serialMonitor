@@ -3,26 +3,37 @@ package ch.tarnet.serialMonitor;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import javax.swing.AbstractAction;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.ComboBoxModel;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
+import javax.swing.event.CaretEvent;
+import javax.swing.event.CaretListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.text.BadLocationException;
@@ -30,6 +41,7 @@ import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
+import ch.tarnet.common.Pref;
 import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
 
 /**
@@ -42,6 +54,8 @@ import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
  */
 public class SerialConsole extends JFrame implements SerialMessageListener {
 
+	private static final Logger logger = Logger.getLogger(SerialConsole.class.getName());
+	
 	/**
 	 * Le manager en charge des communications
 	 */
@@ -61,6 +75,8 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 	private JButton closeButton;
 	private JButton unwatchButton;
 	private JButton watchButton;
+	private JScrollPane consoleScrollPane;
+	private JTextPane textPane;
 	
 	public SerialConsole(SerialManager manager) {
 		this.manager = manager;
@@ -75,14 +91,30 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 		
 		// la barre de menu
 		this.setJMenuBar(buildMenuBar());
+		
 		// la barre d'outil
 		component.add(buildToolBar(), BorderLayout.PAGE_START);
 		
-		// un scrollPane pour afficher les données reçues par les SerialWorkers
-		JComponent consoleScrollPane = buildTextPane();
-		consoleScrollPane.setPreferredSize(new Dimension(400, 300));
-		component.add(consoleScrollPane, BorderLayout.CENTER);
-			
+		// une zone centrale, pour ne pas occuper les bords qui pourrait être utilisé
+		// par la barre d'outil.
+		JPanel centerPanel = new JPanel(new BorderLayout());
+		component.add(centerPanel, BorderLayout.CENTER);
+		
+		// la zone de texte
+		consoleScrollPane = buildTextPane();
+		centerPanel.add(consoleScrollPane, BorderLayout.CENTER);
+		
+		// une barre sur le bas
+		Box bottomBox = new Box(BoxLayout.LINE_AXIS);
+		bottomBox.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+		centerPanel.add(bottomBox, BorderLayout.PAGE_END);
+		
+		bottomBox.add(new JCheckBox("Auto scroll"));
+		bottomBox.add(Box.createHorizontalStrut(5));
+		bottomBox.add(new JTextField());
+		bottomBox.add(Box.createHorizontalStrut(5));
+		bottomBox.add(new JButton("Send"));
+		
 		this.pack();
 	}
 	
@@ -124,7 +156,7 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 		
 		speedCombo = new JComboBox<Integer>(new Integer[] {4800, 9600, 19200, 38400, 57600, 115200, 230400, 250000});
 		speedCombo.setMaximumSize(new Dimension(100, Integer.MAX_VALUE));
-		speedCombo.setSelectedItem(SerialManager.DEFAULT_SPEED);
+		speedCombo.setSelectedItem(Pref.getInt("defaultSerialSpeed", SerialManager.DEFAULT_SPEED));
 		toolBar.add(speedCombo);
 		
 		// les boutons
@@ -214,6 +246,12 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 		return toolBar;
 	}
 	
+	/**
+	 * appelé quand le port série sélectionné au niveau du comboBox est modifié.
+	 * Modifie l'état de tous les autres controls pour refleter ce changement.
+	 * 
+	 * @param descriptor le nouveau port sélectionné
+	 */
 	protected void setSelectedPort(SerialPortDescriptor descriptor) {
 		if(descriptor == null) {
 			openButton.setVisible(true);
@@ -248,18 +286,24 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 		}
 	}
 
-	private JComponent buildTextPane() {
-		JTextPane textPane = new JTextPane();
+	private JScrollPane buildTextPane() {
+		textPane = new JTextPane();
 		textPane.setEditable(false);
 		textPane.setMargin(new Insets(5, 5, 5, 5));
 		
-		
+		textPane.addCaretListener(new CaretListener() {
+			@Override public void caretUpdate(CaretEvent e) {
+				System.out.println("CaretEvent");
+			}
+		});
 		logDocument = textPane.getStyledDocument();
 		Style defaultStyle = logDocument.getStyle("default");
-		defaultStyle.addAttribute(StyleConstants.FontFamily, "Courier New");
+		StyleConstants.setFontFamily(defaultStyle, Pref.getString("defaultFontFamily", "Courier New"));
+		StyleConstants.setFontSize(defaultStyle, Pref.getInt("defaultFontSize", 12));
+		StyleConstants.setForeground(defaultStyle, Color.decode(Pref.getString("defaultForeground", "#222222")));
 		
 		systemStyle = logDocument.addStyle("red", defaultStyle);
-		StyleConstants.setForeground(systemStyle, Color.red);
+		StyleConstants.setForeground(systemStyle, Color.decode(Pref.getString("defaultSystemForeground", "#aa0000")));
 		
 		JScrollPane scrollPane = new JScrollPane(textPane);
 		scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
@@ -283,34 +327,37 @@ public class SerialConsole extends JFrame implements SerialMessageListener {
 		super.setTitle(title);
 		toolBar.setName(title + " toolbar");
 	}
+	
+	@Override
+	public void newSystemMessage(final SerialMessageEvent event) {
+		SwingUtilities.invokeLater(new Runnable() {
+			@Override public void run() {
+				printText(event.getMessage() + "\n", systemStyle);
+			}
+		});
+	}
 
 	@Override
-	public void newSystemMessage(SerialMessageEvent event) {
-		System.err.println(event.getMessage() + "\n");
+	public void newSerialMessage(final SerialMessageEvent event) {
+		if(watchedPorts.contains(event.getDescriptor())) {
+			SwingUtilities.invokeLater(new Runnable() {
+				@Override public void run() {
+					printText(event.getMessage(), null);
+				}
+			});
+		}
+	}
+	
+	public void printText(String text, Style style) {
 		try {
-			logDocument.insertString(logDocument.getLength(), event.getMessage() + "\n", systemStyle);
+			logDocument.insertString(logDocument.getLength(), text, style);
+			textPane.setCaretPosition(logDocument.getLength());
 		}
 		catch(BadLocationException e) {
 			// ne devrait jamais survenir, ne semble pas grave, au pire aucun text ne sera plus écrit.
 			// on log l'erreur mais poursuivons l'execution du programme.
-			System.err.println(e.getMessage());
+			logger.warning(e.getMessage());
 			e.printStackTrace();
-		}
-	}
-
-	@Override
-	public void newSerialMessage(SerialMessageEvent event) {
-		System.out.print(event.getMessage());
-		if(watchedPorts.contains(event.getDescriptor())) {
-			try {
-				logDocument.insertString(logDocument.getLength(), event.getMessage(), null);
-			}
-			catch(BadLocationException e) {
-				// ne devrait jamais survenir, ne semble pas grave, au pire aucun text ne sera plus écrit.
-				// on log l'erreur mais poursuivons l'execution du programme.
-				System.err.println(e.getMessage());
-				e.printStackTrace();
-			}
 		}
 	}
 }

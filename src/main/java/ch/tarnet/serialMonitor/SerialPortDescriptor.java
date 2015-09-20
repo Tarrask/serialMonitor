@@ -1,7 +1,5 @@
 package ch.tarnet.serialMonitor;
 
-import java.awt.Color;
-
 import gnu.io.CommPortIdentifier;
 
 public class SerialPortDescriptor {
@@ -10,14 +8,12 @@ public class SerialPortDescriptor {
 	private CommPortIdentifier portId;
 	private String name;
 	private int speed;
-	private Color color;
 	private Status status;
 	
 	public SerialPortDescriptor(CommPortIdentifier portId, int speed) {
 		this.portId = portId;
 		this.name = portId.getName();
 		this.speed = speed;
-		this.color = Color.black;
 		this.status = Status.UNKNOWN;
 	}
 

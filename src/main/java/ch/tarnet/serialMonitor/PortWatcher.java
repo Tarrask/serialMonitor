@@ -7,6 +7,8 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 
+import ch.tarnet.common.Pref;
+
 class PortWatcher extends Thread {
 	/**
 	 * 
@@ -54,7 +56,8 @@ class PortWatcher extends Thread {
 						nextPortsMap.put(portId, portsMap.get(portId));
 					}
 					else {
-						SerialPortDescriptor descriptor = new SerialPortDescriptor(portId, SerialManager.DEFAULT_SPEED);
+						SerialPortDescriptor descriptor = new SerialPortDescriptor(
+								portId, Pref.getInt("defaultSerialSpeed", SerialManager.DEFAULT_SPEED));
 						nextPortsMap.put(portId, descriptor);
 						serialManager.firePortAddedEvent(descriptor);
 					}
@@ -100,13 +103,6 @@ class PortWatcher extends Thread {
 	
 	
 	protected Enumeration<CommPortIdentifier> getPortIdentifiers()  {
-	/*	Vector<CommPortIdentifier> v = new Vector<CommPortIdentifier>();
-		Enumeration<CommPortIdentifier> e = unsafeCast(CommPortIdentifier.getPortIdentifiers());
-		while(e.hasMoreElements()) {
-			v.add(e.nextElement());
-		}
-		v.add(new FakeIdentifier("COM91"));
-		return v.elements();*/
 		return unsafeCast(CommPortIdentifier.getPortIdentifiers());
 	}
 }

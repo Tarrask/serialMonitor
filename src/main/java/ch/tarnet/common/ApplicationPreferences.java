@@ -3,7 +3,6 @@ package ch.tarnet.common;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URL;
 import java.util.Properties;
 import java.util.logging.Logger;
 import java.util.prefs.AbstractPreferences;
