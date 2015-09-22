@@ -7,6 +7,7 @@ import java.beans.PropertyChangeListener;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.logging.Logger;
@@ -42,6 +43,7 @@ public class SerialConsoleModel {
 	private DefaultComboBoxModel<SerialPortDescriptor> availablePorts = new DefaultComboBoxModel<SerialPortDescriptor>();
 	private DefaultComboBoxModel<Integer> activePortSpeed = new DefaultComboBoxModel<Integer>(new Integer[] {4800, 9600, 19200, 38400, 57600, 115200, 230400, 250000});
 	private HashSet<SerialPortDescriptor> watchedPorts = new HashSet<SerialPortDescriptor>();
+	private HashMap<String, ConsoleSpecPortDescriptor> knownConfig = new HashMap<String, ConsoleSpecPortDescriptor>();
 	private StyledDocument logDocument = new DefaultStyledDocument();
 	
 	private Style logStyle;
@@ -84,8 +86,6 @@ public class SerialConsoleModel {
 		}
 	};
 
-	private JToggleButton.ToggleButtonModel autoScroll = new JToggleButton.ToggleButtonModel();
-	
 	/**
 	 * Gère les évenements liés aux ports provenant du SerialManager
 	 */
@@ -103,6 +103,11 @@ public class SerialConsoleModel {
 			
 			// insert le port dans la liste
 			availablePorts.insertElementAt(descriptor, sortIndex);
+			
+			// si aucune configuration pour ce port n'existe on en créé une par défaut
+			if(!knownConfig.containsKey(descriptor.getName())) {
+				knownConfig.put(descriptor.getName(), new ConsoleSpecPortDescriptor());
+			}
 		}
 
 
@@ -195,6 +200,19 @@ public class SerialConsoleModel {
 		@Override
 		public void propertyChange(PropertyChangeEvent evt) {
 			updateActivePortDependantModels();
+		}
+	};
+	
+	private final PropertyChangeListener portColorListener = new PropertyChangeListener() {
+		@Override
+		public void propertyChange(PropertyChangeEvent event) {
+			if(event.getPropertyName() == "Color" && activePort != null) {
+				Object obj = event.getNewValue();
+				if(obj instanceof Color) {
+					ConsoleSpecPortDescriptor consoleDesc = knownConfig.get(activePort.getName());
+					consoleDesc.setColor((Color)obj);
+				}
+			}
 		}
 	};
 
@@ -310,6 +328,10 @@ public class SerialConsoleModel {
 		}
 	}
 	
+	private void updateColorAction() {
+		
+	}
+	
 	/**
 	 * Appelé suite au changement du port actif, met à jour le bouton watch/unwatch en fonction
 	 * du nouveau port sélectionné.
@@ -379,5 +401,26 @@ public class SerialConsoleModel {
 	}
 	public Action getSendAction() {
 		return sendAction;
+	}
+	public abstract class ColorAction extends AbstractAction {
+		public ColorAction() {
+			addPropertyChangeListener(portColorListener);
+		}
+	}
+	
+	private class ConsoleSpecPortDescriptor {
+		private Color color;
+		
+		public ConsoleSpecPortDescriptor() {
+			color = Color.decode(Pref.get("defaultForeground", "#000"));
+		}
+		
+		public Color getColor() {
+			return color;
+		}
+		
+		public void setColor(Color color) {
+			this.color = color;
+		}
 	}
 }

@@ -1,22 +1,21 @@
 package ch.tarnet.serialMonitor;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.logging.Logger;
 
+import javax.sql.rowset.serial.SerialArray;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.DefaultButtonModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -28,10 +27,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.JToolBar;
-import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.text.Style;
 import javax.swing.text.StyledDocument;
 
 import ch.tarnet.common.Pref;
@@ -54,7 +51,7 @@ public class SerialConsole extends JFrame {
 	private SerialManager manager;
 	
 	// Main gui components
-	private SerialConsoleModel consoleAdapter;
+	private SerialConsoleModel consoleModel;
 	private JMenuBar menuBar;
 	private JToolBar toolBar;
 	private Action refreshPortAction = new AbstractAction("U") {
@@ -67,7 +64,7 @@ public class SerialConsole extends JFrame {
 	
 	public SerialConsole(SerialManager manager) {
 		this.manager = manager;
-		this.consoleAdapter = new SerialConsoleModel(this.manager);
+		this.consoleModel = new SerialConsoleModel(this.manager);
 		buildGUI();
 	}
 	
@@ -82,7 +79,7 @@ public class SerialConsole extends JFrame {
 		this.setJMenuBar(buildMenuBar());
 		
 		// la barre d'outil
-		mainContainer.add(buildToolBar());
+		mainContainer.add(buildToolBar(), BorderLayout.PAGE_START);
 		
 		// une zone centrale, pour ne pas occuper les bords qui pourrait être utilisé
 		// par la barre d'outil.
@@ -104,11 +101,11 @@ public class SerialConsole extends JFrame {
 		bottomBox.add(Box.createHorizontalStrut(5));
 		
 		// un textField pour pouvoir envoyer du text par les ports séries
-		bottomBox.add(new JTextField(consoleAdapter.getCommandModel(), "", 100));
+		bottomBox.add(new JTextField(consoleModel.getCommandModel(), "", 100));
 		bottomBox.add(Box.createHorizontalStrut(5));
 		
 		// le bouton qui déclanche effectivement l'envoi de texte
-		JButton sendButton = new JButton(consoleAdapter.getSendAction());
+		JButton sendButton = new JButton(consoleModel.getSendAction());
 		bottomBox.add(sendButton);
 		
 		this.pack();
@@ -144,15 +141,27 @@ public class SerialConsole extends JFrame {
 	 */
 	private JToolBar buildToolBar() {
 		toolBar = new JToolBar(this.getTitle() + " toolbar");
-		toolBar.add(new JComboBox<SerialPortDescriptor>(consoleAdapter.getAvailablePortsModel()))
+		toolBar.add(new JComboBox<SerialPortDescriptor>(consoleModel.getAvailablePortsModel()))
 			.setMaximumSize(new Dimension(Pref.getInt("serialPortComboWidth", 100), Integer.MAX_VALUE));
 		toolBar.add(new JButton(refreshPortAction));
 		toolBar.addSeparator();
-		toolBar.add(new JComboBox<Integer>(consoleAdapter.getActivePortSpeedModel()))
+		
+		toolBar.add(new JComboBox<Integer>(consoleModel.getActivePortSpeedModel()))
 			.setMaximumSize(new Dimension(Pref.getInt("serialSpeedComboWidth", 100), Integer.MAX_VALUE));
 		toolBar.addSeparator();
-		toolBar.add(new JButton(consoleAdapter.getOpenCloseAction()));
-		toolBar.add(new JButton(consoleAdapter.getWatchUnwatchAction()));
+		
+		toolBar.add(new JButton(consoleModel.getOpenCloseAction()));
+		toolBar.add(new JButton(consoleModel.getWatchUnwatchAction()));
+		toolBar.addSeparator();
+		
+		toolBar.add(new ColorButton(consoleModel.new ColorAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Color newColor = JColorChooser.showDialog(SerialConsole.this, "Pick a color", Color.black);
+				putValue("Color", newColor);
+			}
+		}));
+		
 		return toolBar;
 	}
 	
@@ -161,7 +170,7 @@ public class SerialConsole extends JFrame {
 	 * @return
 	 */
 	private JScrollPane buildTextPane() {
-		StyledDocument doc = consoleAdapter.getLogDocument();
+		StyledDocument doc = consoleModel.getLogDocument();
 		final JTextPane textPane = new JTextPane(doc);
 		doc.addDocumentListener(new DocumentListener() {
 			@Override public void removeUpdate(DocumentEvent e) { autoScroll(); }

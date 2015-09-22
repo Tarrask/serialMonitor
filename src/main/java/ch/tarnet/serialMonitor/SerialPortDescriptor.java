@@ -1,5 +1,6 @@
 package ch.tarnet.serialMonitor;
 
+import java.awt.Color;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 
