@@ -16,9 +16,6 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.Icon;
-import javax.swing.JCheckBox;
-import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
@@ -79,6 +76,17 @@ public class SerialConsoleModel {
 		}
 	};
 	
+	private Action colorAction = new AbstractAction() {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			if(activePort != null) {
+				ConsoleSpecPortDescriptor specDescriptor = knownConfig.get(activePort.getName());
+				specDescriptor.setColor((Color)getValue(ColorButton.ACTION_COLOR_KEY));
+			}
+		}
+	};
+	
+	
 	private Action sendAction = new AbstractAction("Send") {
 		@Override
 		public void actionPerformed(ActionEvent e) {
@@ -103,11 +111,6 @@ public class SerialConsoleModel {
 			
 			// insert le port dans la liste
 			availablePorts.insertElementAt(descriptor, sortIndex);
-			
-			// si aucune configuration pour ce port n'existe on en créé une par défaut
-			if(!knownConfig.containsKey(descriptor.getName())) {
-				knownConfig.put(descriptor.getName(), new ConsoleSpecPortDescriptor());
-			}
 		}
 
 
@@ -143,7 +146,14 @@ public class SerialConsoleModel {
 			if(watchedPorts.contains(event.getDescriptor())) {
 				SwingUtilities.invokeLater(new Runnable() {
 					@Override public void run() {
-						printText(event.getMessage(), logStyle);
+						SerialPortDescriptor descriptor = event.getDescriptor();
+						ConsoleSpecPortDescriptor specDescriptor = getSpecDescriptor(descriptor);
+						Style style = logDocument.getStyle(descriptor.getName());
+						if(style == null) {
+							style = logDocument.addStyle(descriptor.getName(), logStyle);
+						}
+						StyleConstants.setForeground(style, specDescriptor.getColor());
+						printText(event.getMessage(), style);
 					}
 				});
 			}
@@ -200,19 +210,6 @@ public class SerialConsoleModel {
 		@Override
 		public void propertyChange(PropertyChangeEvent evt) {
 			updateActivePortDependantModels();
-		}
-	};
-	
-	private final PropertyChangeListener portColorListener = new PropertyChangeListener() {
-		@Override
-		public void propertyChange(PropertyChangeEvent event) {
-			if(event.getPropertyName() == "Color" && activePort != null) {
-				Object obj = event.getNewValue();
-				if(obj instanceof Color) {
-					ConsoleSpecPortDescriptor consoleDesc = knownConfig.get(activePort.getName());
-					consoleDesc.setColor((Color)obj);
-				}
-			}
 		}
 	};
 
@@ -277,20 +274,22 @@ public class SerialConsoleModel {
 		updateActivePortSpeed();
 		updateOpenCloseAction();
 		updateWatchUnwatchAction();
+		updateColorAction();
 	}
 	
 	/**
 	 * Appelé suite à un changement du port actif, met à jour la variable et transmet le listener
 	 */
 	private void updateActivePortListener() {
-		SerialPortDescriptor oldPort = activePort;
-		SerialPortDescriptor newPort = (SerialPortDescriptor) availablePorts.getSelectedItem();
-		if(oldPort != newPort) {
-			if(oldPort != null) {
-				oldPort.removePropertyChangeListener(activePortListener);
+		SerialPortDescriptor oldDescriptor = activePort;
+		SerialPortDescriptor newDescriptor = (SerialPortDescriptor) availablePorts.getSelectedItem();
+		if(oldDescriptor != newDescriptor) {
+			if(oldDescriptor != null) {
+				oldDescriptor.removePropertyChangeListener(activePortListener);
+				//knownConfig.get(oldDescriptor).removePropertyChangeListener();
 			}
-			activePort = newPort;
-			activePort.addPropertyChangeListener(activePortListener);
+			newDescriptor.addPropertyChangeListener(activePortListener);
+			activePort = newDescriptor;
 		}
 	}
 
@@ -329,7 +328,13 @@ public class SerialConsoleModel {
 	}
 	
 	private void updateColorAction() {
-		
+		if(activePort == null) {
+			colorAction.putValue(ColorButton.ACTION_COLOR_KEY, Color.decode(Pref.get("defaultForeground", "#000")));
+		}
+		else {
+			ConsoleSpecPortDescriptor specDescriptor = getSpecDescriptor(activePort);
+			colorAction.putValue(ColorButton.ACTION_COLOR_KEY, specDescriptor.getColor());
+		}
 	}
 	
 	/**
@@ -377,6 +382,16 @@ public class SerialConsoleModel {
 		}
 	}
 
+	private ConsoleSpecPortDescriptor getSpecDescriptor(SerialPortDescriptor descriptor) {
+		ConsoleSpecPortDescriptor specDescriptor = knownConfig.get(descriptor.getName());
+		if(specDescriptor == null) {
+			specDescriptor = new ConsoleSpecPortDescriptor();
+			knownConfig.put(descriptor.getName(), specDescriptor);
+		}
+		return specDescriptor;
+	}
+	
+	
 	/**
 	 * Un accès au différent model, utilisé par SerialConsole lors de l'initialisation du GUI
 	 * @return
@@ -393,6 +408,10 @@ public class SerialConsoleModel {
 	public Action getWatchUnwatchAction() {
 		return watchUnwatchAction;
 	}
+	public Action getColorAction() {
+		return colorAction;
+	}
+
 	public StyledDocument getLogDocument() {
 		return logDocument;
 	}
@@ -401,11 +420,6 @@ public class SerialConsoleModel {
 	}
 	public Action getSendAction() {
 		return sendAction;
-	}
-	public abstract class ColorAction extends AbstractAction {
-		public ColorAction() {
-			addPropertyChangeListener(portColorListener);
-		}
 	}
 	
 	private class ConsoleSpecPortDescriptor {

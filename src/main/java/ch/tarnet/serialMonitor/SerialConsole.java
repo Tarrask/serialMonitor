@@ -1,13 +1,11 @@
 package ch.tarnet.serialMonitor;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.util.logging.Logger;
 
-import javax.sql.rowset.serial.SerialArray;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
@@ -15,7 +13,6 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -43,6 +40,7 @@ import ch.tarnet.common.Pref;
  */
 public class SerialConsole extends JFrame {
 
+	@SuppressWarnings("unused")
 	private static final Logger logger = Logger.getLogger(SerialConsole.class.getName());
 	
 	/**
@@ -141,8 +139,9 @@ public class SerialConsole extends JFrame {
 	 */
 	private JToolBar buildToolBar() {
 		toolBar = new JToolBar(this.getTitle() + " toolbar");
-		toolBar.add(new JComboBox<SerialPortDescriptor>(consoleModel.getAvailablePortsModel()))
-			.setMaximumSize(new Dimension(Pref.getInt("serialPortComboWidth", 100), Integer.MAX_VALUE));
+		final JComboBox<SerialPortDescriptor> tb = new JComboBox<SerialPortDescriptor>(consoleModel.getAvailablePortsModel());
+		toolBar.add(tb);
+			tb.setMaximumSize(new Dimension(Pref.getInt("serialPortComboWidth", 100), Integer.MAX_VALUE));
 		toolBar.add(new JButton(refreshPortAction));
 		toolBar.addSeparator();
 		
@@ -154,13 +153,7 @@ public class SerialConsole extends JFrame {
 		toolBar.add(new JButton(consoleModel.getWatchUnwatchAction()));
 		toolBar.addSeparator();
 		
-		toolBar.add(new ColorButton(consoleModel.new ColorAction() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				Color newColor = JColorChooser.showDialog(SerialConsole.this, "Pick a color", Color.black);
-				putValue("Color", newColor);
-			}
-		}));
+		toolBar.add(new ColorButton(consoleModel.getColorAction()));
 		
 		return toolBar;
 	}
