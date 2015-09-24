@@ -26,8 +26,6 @@ public class ApplicationPreferencesFactory implements PreferencesFactory {
 	}
 
 	private void createRoot() {
-		System.out.println("createSystemRoot");
-
 		try {
 			root = new ApplicationPreferences();
 		}

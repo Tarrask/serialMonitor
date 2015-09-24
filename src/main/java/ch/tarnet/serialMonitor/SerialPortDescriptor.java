@@ -1,13 +1,11 @@
 package ch.tarnet.serialMonitor;
 
-import java.awt.Color;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 
 import gnu.io.CommPortIdentifier;
 
 public class SerialPortDescriptor {
-
 	private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
 	
 	enum Status {OPEN, CLOSE, USED, UNKNOWN};

@@ -4,8 +4,13 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.logging.Logger;
 
+import javax.script.Invocable;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
@@ -58,6 +63,8 @@ public class SerialConsole extends JFrame {
 			manager.refreshPorts();
 		}
 	};
+	private FilterEditor filterFrame;
+
 	private JCheckBox autoScrollCheckBox;
 	
 	public SerialConsole(SerialManager manager) {
@@ -84,9 +91,6 @@ public class SerialConsole extends JFrame {
 		JPanel centerPanel = new JPanel(new BorderLayout());
 		mainContainer.add(centerPanel, BorderLayout.CENTER);
 		
-		// la zone de texte
-		centerPanel.add(buildTextPane(), BorderLayout.CENTER);
-		
 		// une barre sur le bas
 		Box bottomBox = new Box(BoxLayout.LINE_AXIS);
 		bottomBox.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
@@ -105,6 +109,9 @@ public class SerialConsole extends JFrame {
 		// le bouton qui déclanche effectivement l'envoi de texte
 		JButton sendButton = new JButton(consoleModel.getSendAction());
 		bottomBox.add(sendButton);
+
+		// la zone de texte
+		centerPanel.add(buildTextPane(), BorderLayout.CENTER);
 		
 		this.pack();
 	}
@@ -154,6 +161,35 @@ public class SerialConsole extends JFrame {
 		toolBar.addSeparator();
 		
 		toolBar.add(new ColorButton(consoleModel.getColorAction()));
+		toolBar.add(new AbstractAction("filter...") {
+			@Override 
+			public void actionPerformed(ActionEvent event) {
+				SerialPortDescriptor descriptor = consoleModel.getActivePort();
+				if(descriptor != null) {
+					if(filterFrame == null) {
+						filterFrame = new FilterEditor(SerialConsole.this);
+					}
+					filterFrame.setLocationRelativeTo(SerialConsole.this);
+					filterFrame.setVisible(true);
+				}
+				
+				
+				ScriptEngineManager factory = new ScriptEngineManager();
+				ScriptEngine engine = (ScriptEngine)factory.getEngineByName("JavaScript");
+				Invocable inv = (Invocable) engine;
+				try {
+					engine.eval("function filter(message) { return true; }");
+					boolean returnValue = (boolean)inv.invokeFunction("filter", "Hello world!");
+					System.out.println(returnValue);
+				}
+				catch(ScriptException e) {
+					System.err.println(e.getMessage());
+				}
+				catch(NoSuchMethodException e) {
+					System.err.println(e.getMessage());
+				}
+			}
+		});
 		
 		return toolBar;
 	}
@@ -172,6 +208,14 @@ public class SerialConsole extends JFrame {
 			private void autoScroll() {
 				if(autoScrollCheckBox.isSelected()) {
 					textPane.setCaretPosition(textPane.getDocument().getLength());
+				}
+			}
+		});
+		autoScrollCheckBox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(!autoScrollCheckBox.isSelected()) {
+					textPane.setCaretPosition(textPane.getCaretPosition()-1);
 				}
 			}
 		});

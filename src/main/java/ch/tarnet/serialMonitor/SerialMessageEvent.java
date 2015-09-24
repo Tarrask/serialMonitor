@@ -19,4 +19,8 @@ public class SerialMessageEvent {
 	public String getMessage() {
 		return message;		
 	}
+	
+	public long getWhen() {
+		return when;
+	}
 }

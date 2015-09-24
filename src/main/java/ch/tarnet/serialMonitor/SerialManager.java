@@ -4,8 +4,11 @@ import gnu.io.PortInUseException;
 import gnu.io.SerialPort;
 import gnu.io.UnsupportedCommOperationException;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +36,7 @@ import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
 public class SerialManager {
 	public static final int PORT_WATCHER_WAIT = 60000;
 	public static final int DEFAULT_SPEED = 9600;
+	private static final Charset UTF8 = Charset.forName("utf8");
 	
 	
 	private List<SerialMessageListener> messageListeners = new ArrayList<SerialMessageListener>();
@@ -125,14 +129,14 @@ public class SerialManager {
 		}
 	}
 
-	void firePortAddedEvent(SerialPortDescriptor descriptor) {
+	public void firePortAddedEvent(SerialPortDescriptor descriptor) {
 		SerialPortEvent event = new SerialPortEvent(descriptor);
 		for(SerialPortListener listener : portListeners) {
 			listener.portAdded(event);
 		}
 	}
 
-	void firePortRemovedEvent(SerialPortDescriptor descriptor) {
+	public void firePortRemovedEvent(SerialPortDescriptor descriptor) {
 		SerialPortEvent event = new SerialPortEvent(descriptor);
 		for(SerialPortListener listener : portListeners) {
 			listener.portRemoved(event);
@@ -205,6 +209,22 @@ public class SerialManager {
 			descriptor.setStatus(Status.OPEN);
 			manager.fireSystemMessageEvent(descriptor, "Connection with serial port " + descriptor.getName() + " is open.");
 			manager.firePortStatusChangeEvent(descriptor);
+			descriptor.addPropertyChangeListener(new PropertyChangeListener() {
+				@Override
+				public void propertyChange(PropertyChangeEvent event) {
+					if(event.getPropertyName() == "speed") {
+						try {
+							port.setSerialPortParams(descriptor.getSpeed(), SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
+						}
+						catch(UnsupportedCommOperationException e) {
+							manager.fireSystemMessageEvent(descriptor, "Incompatible params for port " + descriptor.getName() + ".");
+							System.err.println(e.getMessage());
+							port.close();
+							return;
+						}
+					}
+				}
+			});
 
 			// boucle de lecture, si une erreur survient, on ferme le port simplement. A Chaque série de donnée, on
 			// envoie un event.
@@ -213,7 +233,7 @@ public class SerialManager {
 				while(keepRunning) {
 					if(in.available() > 0) {
 						int count = in.read(buffer);
-						manager.fireSerialMessageEvent(descriptor, new String(buffer, 0, count));
+						manager.fireSerialMessageEvent(descriptor, new String(buffer, 0, count, UTF8));
 					}
 					// On attend une petite millisecond pour ne pas burner le processeur
 					try {

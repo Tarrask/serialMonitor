@@ -12,6 +12,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.logging.Logger;
 
+import javax.script.Invocable;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ComboBoxModel;
@@ -36,6 +40,8 @@ public class SerialConsoleModel {
 	
 	private SerialManager manager;
 	
+	private ScriptEngineManager scriptEngineFactory;
+
 	private SerialPortDescriptor activePort = null;
 	private DefaultComboBoxModel<SerialPortDescriptor> availablePorts = new DefaultComboBoxModel<SerialPortDescriptor>();
 	private DefaultComboBoxModel<Integer> activePortSpeed = new DefaultComboBoxModel<Integer>(new Integer[] {4800, 9600, 19200, 38400, 57600, 115200, 230400, 250000});
@@ -136,7 +142,17 @@ public class SerialConsoleModel {
 		public void newSystemMessage(final SerialMessageEvent event) {
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override public void run() {
-					printText(event.getMessage() + "\n", systemStyle);
+					StringBuilder sb = new StringBuilder();
+					try {
+						if(logDocument.getLength() > 0 && !"\n".equals(logDocument.getText(logDocument.getLength()-1, 1))) {
+							sb.append("\n");
+						}
+					}
+					catch(BadLocationException e) {
+						e.printStackTrace();
+					}
+					sb.append(event.getMessage()).append("\n");
+					printText(sb.toString(), systemStyle);
 				}
 			});
 		}
@@ -153,7 +169,29 @@ public class SerialConsoleModel {
 							style = logDocument.addStyle(descriptor.getName(), logStyle);
 						}
 						StyleConstants.setForeground(style, specDescriptor.getColor());
-						printText(event.getMessage(), style);
+						
+						Invocable inv = specDescriptor.getFilter();
+						boolean display = true;
+						String message = event.getMessage();
+						if(inv != null) {
+							try {
+								FilterMessage mes = new FilterMessage(message, style);
+								mes =  (FilterMessage)inv.invokeFunction("filter", mes);
+								display = mes.display;
+								message = mes.message;
+								style = mes.style;
+							} catch (NoSuchMethodException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							} catch (ScriptException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+						
+						if(display) {
+							printText(message, style);
+						}
 					}
 				});
 			}
@@ -218,7 +256,8 @@ public class SerialConsoleModel {
 		this.manager = manager;
 		this.manager.addSerialPortListener(serialPortlistener);
 		this.manager.addSerialMessageListener(serialMessageListener);
-		
+
+		scriptEngineFactory = new ScriptEngineManager();
 		
 		// On initialise et lie les listeners pour les différents model contenant les données
 		// activePort: rien à faire, null au lancement de la console, est défini lors du peuplement des ports disponibles
@@ -245,14 +284,10 @@ public class SerialConsoleModel {
 		// watchedPorts: rien à faire, la liste est vide au lancement de la console
 		
 		// logDocument: initialise les styles
-		Enumeration<?> styles = ((DefaultStyledDocument)logDocument).getStyleNames();
-		while(styles.hasMoreElements()) {
-			System.out.println(styles.nextElement());
-		}
 		logStyle = logDocument.addStyle("log", null);
 		StyleConstants.setFontFamily(logStyle, Pref.getString("defaultFontFamily", "Courier New"));
-		StyleConstants.setFontSize(logStyle, Pref.getInt("defaultFontSize", 12));
-		StyleConstants.setForeground(logStyle, Color.decode(Pref.getString("defaultForeground", "#222222")));
+		StyleConstants.setFontSize(logStyle,   Pref.getInt("defaultFontSize", 12));
+		StyleConstants.setForeground(logStyle, Color.decode(Pref.getString("defaultForeground", "#000")));
 		
 		systemStyle = logDocument.addStyle("red", logStyle);
 		StyleConstants.setForeground(systemStyle, Color.decode(Pref.getString("defaultSystemForeground", "#aa0000")));
@@ -263,7 +298,10 @@ public class SerialConsoleModel {
 		
 		// watchUnwatchAction: rien à faire
 		
+		// colorAction: rien à faire
+		
 		// sendAction: rien à faire TODO pour l'instant en tout cas
+		
 	}
 
 	/**
@@ -411,7 +449,12 @@ public class SerialConsoleModel {
 	public Action getColorAction() {
 		return colorAction;
 	}
-
+	public void setSerialPortColor(Color color) {
+		if(activePort != null) {
+			ConsoleSpecPortDescriptor specDescriptor = knownConfig.get(activePort.getName());
+			specDescriptor.setColor(color);
+		}
+	}
 	public StyledDocument getLogDocument() {
 		return logDocument;
 	}
@@ -422,13 +465,54 @@ public class SerialConsoleModel {
 		return sendAction;
 	}
 	
+	////////////////////////////////////////////////////////////////////////////////////////////
+	public SerialPortDescriptor getActivePort() {
+		return activePort;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////
 	private class ConsoleSpecPortDescriptor {
 		private Color color;
+		private Invocable filter;
 		
 		public ConsoleSpecPortDescriptor() {
 			color = Color.decode(Pref.get("defaultForeground", "#000"));
+			
+			ScriptEngine engine = scriptEngineFactory.getEngineByName("JavaScript");
+			filter = (Invocable) engine;
+			try {
+				engine.eval("function filter(args) { "
+						  + "  println(args.display);"
+						  + "  if(args.message.indexOf('Hello') >= 0) {"
+						  + "    javax.swing.text.StyleConstants.setForeground(args.style, java.awt.Color.pink);"
+						  + "  }; "
+						  + "  return args; "
+						  + "}");
+			}
+			catch(ScriptException e) {
+				System.err.println(e.getMessage());
+			}
 		}
 		
+		public void setFilter(String filter) {
+			try {
+				ScriptEngine engine = scriptEngineFactory.getEngineByName("JavaScript");
+				engine.eval(filter);
+				this.filter = (Invocable) engine;
+			} catch (ScriptException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		public void setFilter(Invocable filter) {
+			this.filter = filter;
+		}
+		
+		public Invocable getFilter() {
+			return filter;
+		}
+
 		public Color getColor() {
 			return color;
 		}

@@ -47,7 +47,7 @@ class PortWatcher extends Thread {
 			// On récupère la liste des ports com visible par RXTX
 			Enumeration<CommPortIdentifier> ports = getPortIdentifiers();
 			
-			// On test chaque port régulièrement
+			// On test chaque port actuellement visible
 			while(ports.hasMoreElements()) {
 				CommPortIdentifier portId = ports.nextElement();
 				// on ne s'interesse qu'aux ports série
