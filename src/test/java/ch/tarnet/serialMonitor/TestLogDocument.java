@@ -1,0 +1,207 @@
+package ch.tarnet.serialMonitor;
+
+import static org.junit.Assert.*;
+
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Element;
+import javax.swing.text.Style;
+import javax.swing.text.StyleContext;
+
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+public class TestLogDocument {
+
+	@BeforeClass
+	public static void setUpBeforeClass() throws Exception {
+	}
+
+	@Test
+	public void testGetLength() {
+		fail("Not yet implemented");
+	}
+
+	@Test
+	public void testLogDocument() {
+		LogDocument doc = new LogDocument();
+		assertEquals(0, 	doc.getLength());
+		assertEquals(0, 	doc.getStartPosition().getOffset());
+		assertEquals(0, 	doc.getEndPosition().getOffset());
+
+		Element root = doc.getDefaultRootElement();
+		assertNotNull(root);
+		assertEquals("logRoot", root.getName());
+		assertEquals(0,			root.getStartOffset());
+		assertEquals(0, 		root.getEndOffset());
+		assertEquals(1, 		root.getElementCount());
+		
+		Element line = root.getElement(0);
+		assertNotNull(line);
+		assertEquals("line", 	line.getName());
+		assertEquals(0, 		line.getStartOffset());
+		assertEquals(0, 		line.getEndOffset());
+		assertEquals(0,			line.getElementCount());
+	}
+		
+	@Test
+	public void testAppendString() throws BadLocationException {
+		LogDocument doc = new LogDocument();
+		Style style = doc.getStyle("default");
+		Style red = doc.addStyle("red", style);
+		
+		// première ajout, sans nouvelle ligne
+		String str1 = "Hello world";
+		int strLength = str1.length();
+		doc.appendString(str1, style);
+		
+		assertEquals(str1, 		doc.getText(0, doc.getLength()));
+		assertEquals(strLength, doc.getLength());
+		assertEquals(0, 		doc.getStartPosition().getOffset());
+		assertEquals(strLength, doc.getEndPosition().getOffset());
+
+		Element root = doc.getDefaultRootElement();
+		assertEquals(0,			root.getStartOffset());
+		assertEquals(strLength, root.getEndOffset());
+		assertEquals(1, 		root.getElementCount());
+		
+		Element line = root.getElement(0);
+		assertEquals(0, 		line.getStartOffset());
+		assertEquals(strLength, line.getEndOffset());
+		assertEquals(1,			line.getElementCount());
+		
+		// ajout même style même ligne
+		String str2 = " of tomorrow.";
+		strLength += str2.length();
+		doc.appendString(str2, style);
+		
+		assertEquals(str1+str2,	doc.getText(0, doc.getLength()));
+		assertEquals(strLength, doc.getLength());
+		assertEquals(0, 		doc.getStartPosition().getOffset());
+		assertEquals(strLength, doc.getEndPosition().getOffset());
+		
+		root = doc.getDefaultRootElement();
+		assertEquals(0,			root.getStartOffset());
+		assertEquals(strLength, root.getEndOffset());
+		assertEquals(1, 		root.getElementCount());
+		
+		line = root.getElement(0);
+		assertEquals(0, 		line.getStartOffset());
+		assertEquals(strLength, line.getEndOffset());
+		assertEquals(1,			line.getElementCount());
+		
+		// ajout différents styles, même ligne
+		String str3 = " IMPORTANT";
+		strLength += str3.length();
+		doc.appendString(str3, red);
+
+		assertEquals(str1+str2+str3,	doc.getText(0, doc.getLength()));
+		assertEquals(strLength, 		doc.getLength());
+		assertEquals(0, 				doc.getStartPosition().getOffset());
+		assertEquals(strLength, 		doc.getEndPosition().getOffset());
+		
+		root = doc.getDefaultRootElement();
+		assertEquals(0,			root.getStartOffset());
+		assertEquals(strLength, root.getEndOffset());
+		assertEquals(1, 		root.getElementCount());
+		
+		line = root.getElement(0);
+		assertEquals(0, 		line.getStartOffset());
+		assertEquals(strLength, line.getEndOffset());
+		assertEquals(2,			line.getElementCount());
+		
+		// même style, nouvelle ligne à la fin
+		String str4 = " take care\n";
+		strLength += str4.length();
+		int line2Start = strLength;
+		doc.appendString(str4, red);
+		
+		assertEquals(str1+str2+str3+str4,	doc.getText(0, doc.getLength()));
+		assertEquals(strLength, 			doc.getLength());
+		assertEquals(0, 					doc.getStartPosition().getOffset());
+		assertEquals(strLength, 			doc.getEndPosition().getOffset());
+		
+		root = doc.getDefaultRootElement();
+		assertEquals(0,			root.getStartOffset());
+		assertEquals(strLength, root.getEndOffset());
+		assertEquals(2, 		root.getElementCount());
+		
+		line = root.getElement(0);
+		assertEquals(0, 			line.getStartOffset());
+		assertEquals(strLength-1,	line.getEndOffset());
+		assertEquals(2,				line.getElementCount());
+		
+		line = root.getElement(1);
+		assertNotNull(line);
+		assertEquals(line2Start, line.getStartOffset());
+		assertEquals(line2Start, line.getEndOffset());
+		assertEquals(0, 		 line.getElementCount());
+		
+		// un premier ajout sans nouvelle ligne sur la 2ème ligne
+		String str5 = "Monster count: ";
+		strLength += str5.length();
+		doc.appendString(str5, style);
+		
+		assertEquals(str1+str2+str3+str4+str5,	doc.getText(0, doc.getLength()));
+		assertEquals(strLength, 				doc.getLength());
+		assertEquals(0, 						doc.getStartPosition().getOffset());
+		assertEquals(strLength, 				doc.getEndPosition().getOffset());
+		
+		root = doc.getDefaultRootElement();
+		assertEquals(0,			root.getStartOffset());
+		assertEquals(strLength, root.getEndOffset());
+		assertEquals(2, 		root.getElementCount());
+		
+		line = root.getElement(0);
+		assertEquals(0, 			line.getStartOffset());
+		assertEquals(line2Start-1,	line.getEndOffset());
+		assertEquals(2,				line.getElementCount());
+		
+		line = root.getElement(1);
+		assertNotNull(line);
+		assertEquals(line2Start, line.getStartOffset());
+		assertEquals(strLength,  line.getEndOffset());
+		assertEquals(1, 		 line.getElementCount());
+		
+		// même style, avec un retour au milieu de ligne
+		String str6_1 = "26";
+		String str6_2 = "Kill count: ";
+		String str6 = str6_1 + "\n" + str6_2;
+		int line3Start = strLength + (str6_1+ "\n").length() ;
+		strLength += str6.length();
+		doc.appendString(str6, style);
+		
+		assertEquals(str1+str2+str3+str4+str5+str6, 
+								doc.getText(0, doc.getLength()));
+		assertEquals(strLength, doc.getLength());
+		assertEquals(0, 		doc.getStartPosition().getOffset());
+		assertEquals(strLength, doc.getEndPosition().getOffset());
+		
+		root = doc.getDefaultRootElement();
+		assertEquals(0,			root.getStartOffset());
+		assertEquals(strLength, root.getEndOffset());
+		assertEquals(3, 		root.getElementCount());
+		
+		line = root.getElement(0);
+		assertEquals(0, 			line.getStartOffset());
+		assertEquals(line2Start-1,	line.getEndOffset());
+		assertEquals(2,				line.getElementCount());
+		
+		line = root.getElement(1);
+		assertNotNull(line);
+		assertEquals(line2Start, 	line.getStartOffset());
+		assertEquals(line3Start-1,  line.getEndOffset());
+		assertEquals(1, 		 	line.getElementCount());
+		
+		line = root.getElement(2);
+		assertNotNull(line);
+		assertEquals(line3Start, 	line.getStartOffset());
+		assertEquals(strLength,		line.getEndOffset());
+		assertEquals(1, 		 	line.getElementCount());
+	} 
+
+	@Test
+	public void testGetTextIntInt() {
+		fail("Not yet implemented");
+	}
+
+}

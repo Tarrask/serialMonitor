@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
@@ -30,6 +31,7 @@ import javax.swing.text.PlainDocument;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
+import javax.swing.text.html.HTMLDocument;
 
 import ch.tarnet.common.Pref;
 import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
@@ -47,7 +49,7 @@ public class SerialConsoleModel {
 	private DefaultComboBoxModel<Integer> activePortSpeed = new DefaultComboBoxModel<Integer>(new Integer[] {4800, 9600, 19200, 38400, 57600, 115200, 230400, 250000});
 	private HashSet<SerialPortDescriptor> watchedPorts = new HashSet<SerialPortDescriptor>();
 	private HashMap<String, ConsoleSpecPortDescriptor> knownConfig = new HashMap<String, ConsoleSpecPortDescriptor>();
-	private StyledDocument logDocument = new DefaultStyledDocument();
+	private LogDocument logDocument = new LogDocument();
 	
 	private Style logStyle;
 	private Style systemStyle;
@@ -407,17 +409,27 @@ public class SerialConsoleModel {
 	 * 
 	 * @param text Le texte à afficher
 	 * @param style le style à employer
+	 * @throws IOException 
 	 */
 	private void printText(String text, Style style) {
-		try {
-			logDocument.insertString(logDocument.getLength(), text, style);
-		}
-		catch(BadLocationException e) {
-			// ne devrait jamais survenir, ne semble pas grave, au pire aucun text ne sera plus écrit.
-			// on log l'erreur mais poursuivons l'execution du programme.
-			logger.warning(e.getMessage());
-			e.printStackTrace();
-		}
+//		try {
+//			logDocument.insertString(logDocument.getLength(), text, style);
+			logDocument.appendString(text, style);
+//			HTMLDocument doc = (HTMLDocument)logDocument;
+//			Color color = (Color)style.getAttribute(StyleConstants.Foreground);
+//			System.out.println(color.toString());
+//			doc.insertBeforeEnd(doc.getElement("body"), "<font color='#f00'>" + text + "</font>");
+//		}
+//		catch(BadLocationException e) {
+//			// ne devrait jamais survenir, ne semble pas grave, au pire aucun text ne sera plus écrit.
+//			// on log l'erreur mais poursuivons l'execution du programme.
+//			logger.warning(e.getMessage());
+//			e.printStackTrace();
+//		} 
+//		catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 	}
 
 	private ConsoleSpecPortDescriptor getSpecDescriptor(SerialPortDescriptor descriptor) {
@@ -458,6 +470,9 @@ public class SerialConsoleModel {
 	public StyledDocument getLogDocument() {
 		return logDocument;
 	}
+	public void setLogDocument(LogDocument logDocument) {
+		this.logDocument = logDocument;
+	}
 	public Document getCommandModel() {
 		return commandText;
 	}
@@ -482,8 +497,8 @@ public class SerialConsoleModel {
 			filter = (Invocable) engine;
 			try {
 				engine.eval("function filter(args) { "
-						  + "  println(args.display);"
 						  + "  if(args.message.indexOf('Hello') >= 0) {"
+						  + "    args.style = javax.swing.text.StyleContext.getDefaultStyleContext().addStyle('pink', args.style);"
 						  + "    javax.swing.text.StyleConstants.setForeground(args.style, java.awt.Color.pink);"
 						  + "  }; "
 						  + "  return args; "

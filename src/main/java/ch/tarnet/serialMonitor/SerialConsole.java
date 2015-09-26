@@ -5,6 +5,7 @@ import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.util.logging.Logger;
 
 import javax.script.Invocable;
@@ -20,6 +21,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JEditorPane;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -31,7 +33,13 @@ import javax.swing.JTextPane;
 import javax.swing.JToolBar;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.text.Element;
 import javax.swing.text.StyledDocument;
+import javax.swing.text.html.HTMLDocument;
+
+import org.w3c.dom.html.HTMLElement;
 
 import ch.tarnet.common.Pref;
 
@@ -198,15 +206,49 @@ public class SerialConsole extends JFrame {
 	 * Construit le panneau de texte, contenu dans un JScrollPane
 	 * @return
 	 */
-	private JScrollPane buildTextPane() {
-		StyledDocument doc = consoleModel.getLogDocument();
-		final JTextPane textPane = new JTextPane(doc);
+	private JComponent buildTextPane() {
+//		StyledDocument doc = consoleModel.getLogDocument();
+//		final JTextPane textPane = new JTextPane(doc);
+		final LogPane textPane = new LogPane(consoleModel.getLogDocument());
+//		final JEditorPane textPane = new JEditorPane();
+//		textPane.setContentType("text/html");
+		textPane.setEditable(false);
+		textPane.setMargin(new Insets(5, 5, 5, 5));
+//		textPane.setText(
+//				  "<html>"
+//				+ "  <head>"
+//				+ "    <style>"
+//				+ "      body { "
+//				+ "        font-family: 'Courier new';"
+//				+ "      }"
+//				+ "    </style>"
+//				+ "  </head>"
+//				+ "  <body id='body'>"
+//				+ "    <font color='blue'>Welcome to SerialMonitor</font>"
+//				+ "  </body>"
+//				+ "</html>");
+		
+		StyledDocument doc = (StyledDocument)textPane.getDocument();
+//		consoleModel.setLogDocument(doc);
+//		Element body = doc.getElement("body");
+//		System.out.println(body);
+//		try {
+//			doc.insertBeforeEnd(body, "Hello");
+//		} catch (BadLocationException e1) {
+//			// TODO Auto-generated catch block
+//			e1.printStackTrace();
+//		} catch (IOException e1) {
+//			// TODO Auto-generated catch block
+//			e1.printStackTrace();
+//		}
 		doc.addDocumentListener(new DocumentListener() {
 			@Override public void removeUpdate(DocumentEvent e) { autoScroll(); }
 			@Override public void insertUpdate(DocumentEvent e) { autoScroll(); }
 			@Override public void changedUpdate(DocumentEvent e) { autoScroll(); }
 			private void autoScroll() {
 				if(autoScrollCheckBox.isSelected()) {
+					Document doc = textPane.getDocument();
+					int length = doc.getLength();
 					textPane.setCaretPosition(textPane.getDocument().getLength());
 				}
 			}
@@ -219,8 +261,6 @@ public class SerialConsole extends JFrame {
 				}
 			}
 		});
-		textPane.setEditable(false);
-		textPane.setMargin(new Insets(5, 5, 5, 5));
 		
 		JScrollPane scrollPane = new JScrollPane(textPane);
 		scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);

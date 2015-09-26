@@ -208,7 +208,7 @@ public class SerialManager {
 			// Aquite de l'ouverture du port.
 			descriptor.setStatus(Status.OPEN);
 			manager.fireSystemMessageEvent(descriptor, "Connection with serial port " + descriptor.getName() + " is open.");
-			manager.firePortStatusChangeEvent(descriptor);
+			//manager.firePortStatusChangeEvent(descriptor);
 			descriptor.addPropertyChangeListener(new PropertyChangeListener() {
 				@Override
 				public void propertyChange(PropertyChangeEvent event) {
