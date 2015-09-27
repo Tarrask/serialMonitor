@@ -63,7 +63,7 @@ public class ApplicationPreferences extends AbstractPreferences {
 				applicationProperties.load(new FileInputStream(applicationFile));
 			}
 			catch(IOException e) {
-				logger.info("Unable to read application preference file at: " + path);			
+				logger.warning("Unable to read application preference file at: " + path);			
 			}
 		}
 		
@@ -73,7 +73,7 @@ public class ApplicationPreferences extends AbstractPreferences {
 					defaultProperties.getProperty("userConfigFile", "%user.home%/.unnamedJavaApp.config"));
 		String userHome = System.getProperty("user.home").replaceAll("\\\\", "/");
 		path = path.replaceFirst("%user\\.dir%", userHome);
-		System.out.println("user dir: " + path);
+		logger.config("user config: " + path);
 		userFile = new File(path);
 		userProperties = new Properties();
 		if(userFile.exists()) {
