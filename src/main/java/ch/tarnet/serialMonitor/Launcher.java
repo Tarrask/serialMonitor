@@ -50,7 +50,7 @@ public class Launcher {
 		consoles.add(console);
 		console.addWindowListener(closingListener);
 		console.setSize(Pref.getInt("consoleWidth", 400), Pref.getInt("consoleHeight", 300));
-		console.setLocationRelativeTo(null);
+		console.setLocationByPlatform(true);
 		console.setVisible(true);
 		
 		return console;
