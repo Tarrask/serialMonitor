@@ -18,6 +18,30 @@ public class Pref {
 		return pref.get(key, def);
 	}
 	
+	static public boolean get(String key, boolean def) {
+		return pref.getBoolean(key, def);
+	}
+	
+	static public byte[] get(String key, byte[] def) {
+		return pref.getByteArray(key, def);
+	}
+	
+	static public double get(String key, double def) {
+		return pref.getDouble(key, def);
+	}
+	
+	static public float get(String key, float def) {
+		return pref.getFloat(key, def);
+	}
+	
+	static public int get(String key, int def) {
+		return pref.getInt(key, def);
+	}
+	
+	static public long get(String key, long def) {
+		return pref.getLong(key, def);
+	}
+	
 	static public String getString(String key, String def) {
 		return pref.get(key, def);
 	}
