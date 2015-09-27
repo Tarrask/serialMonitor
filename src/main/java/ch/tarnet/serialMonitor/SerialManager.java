@@ -142,13 +142,6 @@ public class SerialManager {
 			listener.portRemoved(event);
 		}
 	}
-	
-	private void firePortStatusChangeEvent(SerialPortDescriptor descriptor) {
-		SerialPortEvent event = new SerialPortEvent(descriptor);
-		for(SerialPortListener listener : portListeners) {
-			listener.portStatusChanged(event);
-		}
-	}
 
 	
 	static private class SerialWorker extends Thread {
@@ -208,7 +201,8 @@ public class SerialManager {
 			// Aquite de l'ouverture du port.
 			descriptor.setStatus(Status.OPEN);
 			manager.fireSystemMessageEvent(descriptor, "Connection with serial port " + descriptor.getName() + " is open.");
-			//manager.firePortStatusChangeEvent(descriptor);
+			
+			// On écoute les changements de vitesse
 			descriptor.addPropertyChangeListener(new PropertyChangeListener() {
 				@Override
 				public void propertyChange(PropertyChangeEvent event) {
@@ -253,7 +247,6 @@ public class SerialManager {
 				//retire le worker de la liste des workers actifs.
 				manager.workers.remove(descriptor);
 				manager.fireSystemMessageEvent(descriptor, "Connection with serial port " + descriptor.getName() + " is close.");
-				manager.firePortStatusChangeEvent(descriptor);
 			}
 		}
 	}

@@ -7,10 +7,10 @@ import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Insets;
 import java.awt.Rectangle;
-import java.awt.geom.Rectangle2D;
 import java.util.Enumeration;
 
 import javax.swing.Scrollable;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -38,7 +38,6 @@ public class LogPane extends JTextComponent implements Scrollable, DocumentListe
 		UIManager.put("LogPaneUI", LogPaneUI.class.getName());
 	}
 
-	private int maxWidth = 0;
 	private Font courier;
 	private FontMetrics courierMetrics;
 	
@@ -55,39 +54,35 @@ public class LogPane extends JTextComponent implements Scrollable, DocumentListe
 	@Override
 	protected void paintComponent(Graphics g) {
 		Rectangle bounds = g.getClipBounds();
+		Insets margin = getMargin();
+		int lineHeight = courierMetrics.getHeight();
+		
 		if(isOpaque()) {
 			g.setColor(getBackground());
 			g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
 		}
-		Insets margin = getMargin();
-		FontMetrics metrics = g.getFontMetrics(courier);
 		g.setColor(Color.black);
 		g.setFont(courier);
 		
 		Document doc = getDocument();
 		Element root = doc.getDefaultRootElement();
-//		dumpElement(root, "");
-		int firstLine = bounds.y / metrics.getHeight();
-		int lastLine = Math.min(firstLine + (int)bounds.getHeight() / metrics.getHeight(), root.getElementCount());
+		
+		int firstLine = Math.max((bounds.y-margin.top) / lineHeight, 0);
+		int lastLine = Math.min(firstLine + (int)Math.ceil(bounds.getHeight() / lineHeight), root.getElementCount());
+		
 		for(int i = firstLine; i < lastLine; i++) {
-			paintLine(g, root.getElement(i), margin.left, margin.top + metrics.getHeight() * (i+1));
+			paintLine(g, root.getElement(i), margin.left, margin.top + lineHeight * (i+1));
 		}
 	}
 	
 	private void paintLine(Graphics g, Element line, int x, int y) {
 		for(int i = 0; i < line.getElementCount(); i++) {
-			try {
-				Element block = line.getElement(i);
-				Color c = (Color)block.getAttributes().getAttribute(StyleConstants.Foreground);
-				String blockText = getDocument().getText(block.getStartOffset(), block.getEndOffset()-block.getStartOffset());
-				g.setColor(c);
-				g.drawString(blockText, x, y);
-				Rectangle2D bounds = g.getFontMetrics().getStringBounds(blockText, g);
-				x += bounds.getWidth();
-			}
-			catch(BadLocationException e) {
-				e.printStackTrace();
-			}
+			BasicElement block = (BasicElement)line.getElement(i);
+			Color c = (Color)block.getAttributes().getAttribute(StyleConstants.Foreground);
+			String blockText = block.getText(); //getDocument().getText(block.getStartOffset(), block.getEndOffset()-block.getStartOffset());
+			g.setColor(c);
+			g.drawString(blockText, x, y);
+			x += SwingUtilities2.stringWidth(this, courierMetrics, blockText);
 		}
 	}
 	
@@ -101,6 +96,7 @@ public class LogPane extends JTextComponent implements Scrollable, DocumentListe
 		return uiClassID;
 	}
 	
+	@SuppressWarnings("unused")
 	private void dumpElement(Element elem, String indent) {
 		try {
 			int start = elem.getStartOffset();
@@ -130,6 +126,16 @@ public class LogPane extends JTextComponent implements Scrollable, DocumentListe
 		return new Dimension(
 				((BasicElement)getDocument().getDefaultRootElement()).getWidth() + margin.left + margin.right, 
 				getDocument().getDefaultRootElement().getElementCount() * 14 +  margin.top + margin.bottom);
+	}
+	
+	@Override
+	public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+		if(SwingConstants.HORIZONTAL == orientation) {
+			return courierMetrics.getMaxAdvance();
+		}
+		else {
+			return courierMetrics.getHeight();
+		}
 	}
 	
 	@Override

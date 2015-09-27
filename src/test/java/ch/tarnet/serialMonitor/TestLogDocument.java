@@ -5,7 +5,6 @@ import static org.junit.Assert.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Element;
 import javax.swing.text.Style;
-import javax.swing.text.StyleContext;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -18,7 +17,18 @@ public class TestLogDocument {
 
 	@Test
 	public void testGetLength() {
-		fail("Not yet implemented");
+		LogDocument doc = new LogDocument();
+		Style style = doc.getStyle("default");
+		Style red = doc.addStyle("red", style);
+		
+		doc.appendString("Hello world", style);
+		assertEquals(11, doc.getLength());
+		
+		doc.appendString("less", red);
+		assertEquals(15, doc.getLength());
+		
+		doc.appendString("ive\nhaha", style);
+		assertEquals(23, doc.getLength());
 	}
 
 	@Test
@@ -198,10 +208,32 @@ public class TestLogDocument {
 		assertEquals(strLength,		line.getEndOffset());
 		assertEquals(1, 		 	line.getElementCount());
 	} 
+	
+	/**
+	 * je sais pas vraiment ce que ca fait de ne pas mettre de style, mais ca ne devrait pas
+	 * fonctionner
+	 */
+	@Test
+	public void testAppendString_noStyle() {
+		LogDocument doc = new LogDocument();
+		doc.appendString("Hello world", null);
+	}
 
 	@Test
-	public void testGetTextIntInt() {
-		fail("Not yet implemented");
+	public void testGetText() throws BadLocationException {
+		LogDocument doc = new LogDocument();
+		Style style = doc.getStyle("default");
+		Style red = doc.addStyle("red", style);
+		
+		doc.appendString("Hello world", style);
+		assertEquals("Hello", doc.getText(0, 5));
+		assertEquals("world", doc.getText(6, 5));
+		
+		doc.appendString("Some more", style);
+		assertEquals("worldSome", doc.getText(6, 9));
+		
+		doc.appendString("less\nline", red);
+		assertEquals("less\nline", doc.getText(20, 9));
 	}
 
 }

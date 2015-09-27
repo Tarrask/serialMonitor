@@ -7,7 +7,6 @@ import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,13 +24,11 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.DefaultStyledDocument;
 import javax.swing.text.Document;
 import javax.swing.text.PlainDocument;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
-import javax.swing.text.html.HTMLDocument;
 
 import ch.tarnet.common.Pref;
 import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
@@ -103,7 +100,10 @@ public class SerialConsoleModel {
 	};
 
 	/**
-	 * Gère les évenements liés aux ports provenant du SerialManager
+	 * Gère les évenements liés aux ports provenant du SerialManager. Lorsque un nouveau port est
+	 * détecté par le SerialManager, on l'ajoute à la liste de cette fenêtre trié par ordre alphabetique
+	 * du nom de ports.
+	 * Si un port n'est plus disponible, on le retire simplement.
 	 */
 	private final SerialPortListener serialPortlistener = new SerialPortListener() {
 		@Override 
@@ -126,13 +126,6 @@ public class SerialConsoleModel {
 		public void portRemoved(SerialPortEvent event) {
 			SerialPortDescriptor descriptor = event.getDescriptor();
 			availablePorts.removeElement(descriptor);
-		}
-
-
-		@Override
-		public void portStatusChanged(SerialPortEvent event) {
-		//	updateActivePortDependantModels();
-			System.out.println("Should not call this anymore");
 		}
 	};
 	

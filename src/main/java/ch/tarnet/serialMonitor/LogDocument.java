@@ -24,7 +24,8 @@ public class LogDocument implements StyledDocument {
 	private ArrayList<DocumentListener> documentListeners = new ArrayList<DocumentListener>();
 	private ArrayList<UndoableEditListener> undoableEditListeners = new ArrayList<UndoableEditListener>();
 	private HashMap<Object, Object> properties = new HashMap<Object, Object>();
-	private StyleContext styleContext = StyleContext.getDefaultStyleContext();
+	// un contexte personel, pour qu'un changement de couleur d'un style ne modifie pas la couleur des autres fenêtres
+	private StyleContext styleContext = new StyleContext();
 	
 	private Position startPosition = new LogPosition(0);
 	private Position endPosition = new EndPosition();
@@ -77,7 +78,10 @@ public class LogDocument implements StyledDocument {
 		throw new UnsupportedOperationException("Use append string instead.");
 	}
 	
-	public void appendString(String str, AttributeSet a) {
+	public void appendString(String str, AttributeSet attributes) {
+		// on recherche le premier changement de ligne. Si une nouvelle ligne est trouvé, on découpe la
+		// chaine en deux. Dans un premier temps, on ne s'occupe que de la première partie, à ajouter
+		// à la dernière ligne actuelle.
 		int firstNewLine = str.indexOf('\n');
 		String nextLine = null;
 		if(firstNewLine >= 0) {
@@ -94,23 +98,26 @@ public class LogDocument implements StyledDocument {
 			lastBlock = (BlockElement)lastLine.getElement(lastLine.getElementCount()-1);
 		}
 		
-		if(lastBlock != null && lastBlock.getAttributes() == a) {
+		if(lastBlock != null && lastBlock.getAttributes() == attributes) {
 			lastBlock.endOffset += str.length();
 			lastLine.endOffset += str.length();
 		}
 		else {
-			lastBlock = new BlockElement(lastLine, lastLine.endOffset, lastLine.endOffset+str.length(), a);
+			lastBlock = new BlockElement(lastLine, lastLine.endOffset, lastLine.endOffset+str.length(), attributes);
 			lastLine.blocks.add(lastBlock);
 			lastLine.endOffset += str.length();
 		}
 
 		fireDocumentChanged(lastBlock);
 		
+		// Si une deuxième ligne existait dans la chaine à ajouter, on s'en occupe maintenant. Premièrement
+		// on ajoute la nouvelle ligne au model.
 		if(nextLine != null) {
 			text.append('\n');
 			rootElement.lines.add(new LineElement(rootElement, lastLine.endOffset+1, lastLine.endOffset+1));
+			// et s'il y a du texte sur cette nouvelle ligne, on l'ajoute aussi, de façon recursive
 			if(nextLine.length() > 0) {
-				appendString(nextLine, a);
+				appendString(nextLine, attributes);
 			}
 		}
 		
@@ -402,7 +409,6 @@ public class LogDocument implements StyledDocument {
 		private LineElement parent;
 		private int startOffset, endOffset;
 		private AttributeSet attributes;
-		private int width;
 		
 		public BlockElement(LineElement parent, int startOffset, int endOffset, AttributeSet attributes) {
 			this.parent = parent;
