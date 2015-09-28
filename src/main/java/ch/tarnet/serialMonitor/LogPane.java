@@ -16,13 +16,18 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.Caret;
+import javax.swing.text.DefaultCaret;
+import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Document;
 import javax.swing.text.Element;
+import javax.swing.text.Highlighter;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
 import sun.swing.SwingUtilities2;
+import ch.tarnet.common.Pref;
 import ch.tarnet.serialMonitor.LogDocument.BasicElement;
 import ch.tarnet.serialMonitor.LogDocument.LogDocumentEvent;
 
@@ -33,9 +38,8 @@ public class LogPane extends JTextComponent implements Scrollable, DocumentListe
      * @see #readObject
      */
     private static final String uiClassID = "LogPaneUI";
-    
 	static {
-		UIManager.put("LogPaneUI", LogPaneUI.class.getName());
+		UIManager.put("LogPaneUI", LogPaneUI2.class.getName());
 	}
 
 	private Font courier;
@@ -45,9 +49,20 @@ public class LogPane extends JTextComponent implements Scrollable, DocumentListe
 		setDocument(doc);
 		doc.addDocumentListener(this);
 		setOpaque(true);
-		setBackground(Color.white);
-		courier = new Font("Courier new", Font.PLAIN, 12);
+//		setBackground(Color.white);
+		courier = new Font(Pref.get("defaultFontFamily", "Courier new"), Font.PLAIN, Pref.getInt("defaultFontSize", 12));
 		courierMetrics = getFontMetrics(courier);
+		System.out.println(courierMetrics);
+		
+		getCaret().setVisible(true);
+//		Caret caret = new DefaultCaret();
+//		caret.setBlinkRate(500);
+//		setCaretColor(Color.black);
+//		setCaret(caret);
+//		caret.setVisible(true);
+//		
+//		Highlighter highlighter = new DefaultHighlighter();
+//		setHighlighter(highlighter);
 	}
 	
 	
@@ -71,8 +86,10 @@ public class LogPane extends JTextComponent implements Scrollable, DocumentListe
 		int lastLine = Math.min(firstLine + (int)Math.ceil(bounds.getHeight() / lineHeight), root.getElementCount());
 		
 		for(int i = firstLine; i < lastLine; i++) {
-			paintLine(g, root.getElement(i), margin.left, margin.top + lineHeight * (i+1));
+			paintLine(g, root.getElement(i), margin.left, margin.top + lineHeight * i + courierMetrics.getAscent());
 		}
+		
+		paintCaret(g);
 	}
 	
 	private void paintLine(Graphics g, Element line, int x, int y) {
@@ -83,12 +100,12 @@ public class LogPane extends JTextComponent implements Scrollable, DocumentListe
 			g.setColor(c);
 			g.drawString(blockText, x, y);
 			x += SwingUtilities2.stringWidth(this, courierMetrics, blockText);
+			
 		}
 	}
 	
-	@Override
-	public void setCaretPosition(int position) {
-		
+	private void paintCaret(Graphics g) {
+		getCaret().paint(g);
 	}
 	
 	@Override

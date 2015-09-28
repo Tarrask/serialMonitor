@@ -114,7 +114,10 @@ public class LogDocument implements StyledDocument {
 		// on ajoute la nouvelle ligne au model.
 		if(nextLine != null) {
 			text.append('\n');
-			rootElement.lines.add(new LineElement(rootElement, lastLine.endOffset+1, lastLine.endOffset+1));
+			LineElement line = new LineElement(rootElement, lastLine.endOffset+1, lastLine.endOffset+1);
+			rootElement.lines.add(line);
+			fireDocumentChanged(line);
+			
 			// et s'il y a du texte sur cette nouvelle ligne, on l'ajoute aussi, de façon recursive
 			if(nextLine.length() > 0) {
 				appendString(nextLine, attributes);
@@ -138,7 +141,9 @@ public class LogDocument implements StyledDocument {
 
 	@Override
 	public void getText(int offset, int length, Segment txt) throws BadLocationException {
-		throw new UnsupportedOperationException();
+		txt.array = text.substring(offset, offset + length).toCharArray();
+		txt.offset = 0;
+		txt.count = length;
 	}
 
 	@Override
@@ -209,7 +214,13 @@ public class LogDocument implements StyledDocument {
 
 	@Override
 	public Element getParagraphElement(int pos) {
-		throw new UnsupportedOperationException();
+		return getLineElement(pos);
+	}
+	
+	public LineElement getLineElement(int pos) {
+		int lineIndex = 0;
+		for(; lineIndex < rootElement.getElementCount() && rootElement.getElement(lineIndex).getEndOffset() < pos; lineIndex++);
+		return (LineElement)rootElement.getElement(lineIndex);
 	}
 
 	@Override
