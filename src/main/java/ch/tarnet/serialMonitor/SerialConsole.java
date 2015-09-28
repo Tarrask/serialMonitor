@@ -2,6 +2,7 @@ package ch.tarnet.serialMonitor;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -193,14 +194,12 @@ public class SerialConsole extends JFrame {
 		return toolBar;
 	}
 	
-	/**
-	 * Construit le panneau de texte, contenu dans un JScrollPane
-	 * @return
-	 */
 	private JComponent buildTextPane() {
 		final LogPane textPane = new LogPane(consoleModel.getLogDocument());
 		textPane.setEditable(false);
+		textPane.getCaret().setVisible(true);
 		textPane.setMargin(new Insets(5, 5, 5, 5));
+		textPane.setFont(new Font("Courier new", Font.PLAIN, 12));
 		
 		StyledDocument doc = (StyledDocument)textPane.getDocument();
 		doc.addDocumentListener(new DocumentListener() {

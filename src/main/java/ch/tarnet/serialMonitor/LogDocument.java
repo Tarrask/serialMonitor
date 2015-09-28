@@ -3,6 +3,7 @@ package ch.tarnet.serialMonitor;
 import java.awt.Color;
 import java.awt.Font;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 
 import javax.swing.event.DocumentEvent;
@@ -242,6 +243,29 @@ public class LogDocument implements StyledDocument {
 	public Font getFont(AttributeSet attr) {
 		return styleContext.getFont(attr);
 	}
+	
+	public static void dumpElement(Element elem, String indent) {
+		try {
+			int start = elem.getStartOffset();
+			int end = elem.getEndOffset();
+			
+				System.out.println(indent + (elem.isLeaf()?"#":"") + elem.getName() + " (" + start + ".." + end + ") = " + elem.getDocument().getText(start, end-start));
+			
+			AttributeSet attrs = elem.getAttributes();
+			Enumeration<?> names = attrs.getAttributeNames();
+			while(names.hasMoreElements()) {
+				Object attrName = names.nextElement();
+				System.out.println(indent + " -> " + attrName + ": " + attrs.getAttribute(attrName));
+			}
+			for(int i = 0; i < elem.getElementCount(); i++) {
+				dumpElement(elem.getElement(i), indent + "    ");
+			}
+		} 
+		catch (BadLocationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
 	private class EndPosition implements Position {
 		@Override
@@ -266,12 +290,13 @@ public class LogDocument implements StyledDocument {
 	
 	public abstract class BasicElement implements Element {
 
+		@Deprecated
 		private int width = 0;
-		
+		@Deprecated
 		public int getWidth() {
 			return width;
 		}
-		
+		@Deprecated
 		public void setWidth(int width) {
 			this.width = width;
 		}
@@ -281,6 +306,7 @@ public class LogDocument implements StyledDocument {
 				return getDocument().getText(getStartOffset(), getEndOffset()-getStartOffset());
 			}
 			catch(BadLocationException e) {
+				// should not append
 				e.printStackTrace();
 				return "";
 			}
@@ -329,8 +355,9 @@ public class LogDocument implements StyledDocument {
 
 		@Override
 		public int getElementIndex(int offset) {
-			// TODO Auto-generated method stub
-			return 0;
+			int lineIndex = 0;
+			for(; lineIndex < getElementCount() && getElement(lineIndex).getEndOffset() < offset; lineIndex++);
+			return lineIndex;
 		}
 
 		@Override
