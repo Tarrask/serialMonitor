@@ -1,20 +1,18 @@
 package ch.tarnet.serialMonitor;
 
 import javax.swing.UIManager;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.StyledDocument;
 
-public class LogPane extends JTextComponent implements DocumentListener {
+public class LogPane extends JTextComponent {
 	
 	/**
      * @see #getUIClassID
      * @see #readObject
      */
-    private static final String uiClassID = "LogPaneUI2";
+    private static final String uiClassID = "LogPaneUI";
 	static {
-		UIManager.put("LogPaneUI2", LogPaneUI.class.getName());
+		UIManager.put("LogPaneUI", LogPaneUI.class.getName());
 	}
 
 	@Override
@@ -24,21 +22,5 @@ public class LogPane extends JTextComponent implements DocumentListener {
 	
 	public LogPane(StyledDocument doc) {
 		setDocument(doc);
-		doc.addDocumentListener(this);
-	}
-
-	@Override
-	public void insertUpdate(DocumentEvent e) {
-		repaint();
-	}
-
-	@Override
-	public void removeUpdate(DocumentEvent e) {
-		repaint();
-	}
-
-	@Override
-	public void changedUpdate(DocumentEvent e) {
-		repaint();
 	}
 }

@@ -289,18 +289,6 @@ public class LogDocument implements StyledDocument {
 	}
 	
 	public abstract class BasicElement implements Element {
-
-		@Deprecated
-		private int width = 0;
-		@Deprecated
-		public int getWidth() {
-			return width;
-		}
-		@Deprecated
-		public void setWidth(int width) {
-			this.width = width;
-		}
-		
 		public String getText() {
 			try {
 				return getDocument().getText(getStartOffset(), getEndOffset()-getStartOffset());
