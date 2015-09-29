@@ -13,6 +13,8 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.Element;
+import javax.swing.text.Highlighter;
+import javax.swing.text.LayeredHighlighter;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.ViewFactory;
@@ -67,7 +69,7 @@ public class LogView extends View {
         Rectangle bounds = g.getClipBounds();
 		Insets margin = host.getMargin();
 		
-		g.setColor(Color.black);
+		g.setColor(host.getForeground());
 		g.setFont(host.getFont());
 		
 		Document doc = getDocument();
@@ -75,9 +77,15 @@ public class LogView extends View {
 		
 		int firstLine = Math.max((bounds.y-margin.top) / lineHeight, 0);
 		int lastLine = Math.min(firstLine + (int)Math.ceil(bounds.getHeight() / lineHeight), root.getElementCount());
-		
+
+		Highlighter h = host.getHighlighter();
+ 		LayeredHighlighter dh = (h instanceof LayeredHighlighter) ? (LayeredHighlighter)h : null;
 		for(int i = firstLine; i < lastLine; i++) {
-			paintLine(g, root.getElement(i), margin.left, margin.top + lineHeight * i + metrics.getAscent());
+			Element line = root.getElement(i);
+			if (dh != null) {
+				dh.paintLayeredHighlights(g, line.getStartOffset(), line.getEndOffset(), allocation, host, this);
+			}
+			paintLine(g, line, margin.left, margin.top + lineHeight * i + metrics.getAscent());
 		}
 	}
 
