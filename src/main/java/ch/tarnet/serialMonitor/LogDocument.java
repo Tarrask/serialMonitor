@@ -20,6 +20,7 @@ import javax.swing.text.Style;
 import javax.swing.text.StyleContext;
 import javax.swing.text.StyledDocument;
 
+
 public class LogDocument implements StyledDocument {
 
 	private ArrayList<DocumentListener> documentListeners = new ArrayList<DocumentListener>();
@@ -219,6 +220,7 @@ public class LogDocument implements StyledDocument {
 	}
 	
 	public LineElement getLineElement(int pos) {
+		rootElement.getElementIndex(pos);
 		int lineIndex = 0;
 		for(; lineIndex < rootElement.getElementCount() && rootElement.getElement(lineIndex).getEndOffset() < pos; lineIndex++);
 		return (LineElement)rootElement.getElement(lineIndex);
@@ -242,29 +244,6 @@ public class LogDocument implements StyledDocument {
 	@Override
 	public Font getFont(AttributeSet attr) {
 		return styleContext.getFont(attr);
-	}
-	
-	public static void dumpElement(Element elem, String indent) {
-		try {
-			int start = elem.getStartOffset();
-			int end = elem.getEndOffset();
-			
-				System.out.println(indent + (elem.isLeaf()?"#":"") + elem.getName() + " (" + start + ".." + end + ") = " + elem.getDocument().getText(start, end-start));
-			
-			AttributeSet attrs = elem.getAttributes();
-			Enumeration<?> names = attrs.getAttributeNames();
-			while(names.hasMoreElements()) {
-				Object attrName = names.nextElement();
-				System.out.println(indent + " -> " + attrName + ": " + attrs.getAttribute(attrName));
-			}
-			for(int i = 0; i < elem.getElementCount(); i++) {
-				dumpElement(elem.getElement(i), indent + "    ");
-			}
-		} 
-		catch (BadLocationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 
 	private class EndPosition implements Position {
@@ -341,10 +320,36 @@ public class LogDocument implements StyledDocument {
 			return LogDocument.this.getLength();
 		}
 
+		/**
+		 * Recherche la ligne comportant l'offset donné. Cette methode utilise un binary search iteratif pour
+		 * trouver la ligne, cela devient particulièrement intéressant lorsque le nombre de lignes devient important.
+		 * @param offset La position depuis le début du document.
+		 * @return la ligne à laquelle se trouve la position.
+		 */
 		@Override
 		public int getElementIndex(int offset) {
-			int lineIndex = 0;
-			for(; lineIndex < getElementCount() && getElement(lineIndex).getEndOffset() < offset; lineIndex++);
+			int lineStart = 0;
+			int lineEnd = lines.size();
+			int lineIndex = lineEnd/2;
+			boolean found = false;
+			
+			while(!found) {
+				Element line = lines.get(lineIndex);
+				// la ligne se trouve avant
+				if(line.getStartOffset() > offset) {
+					lineEnd = lineIndex;
+					lineIndex = (lineIndex - lineStart)/2 + lineStart;
+				}
+				// la ligne se trouve après
+				else if(line.getEndOffset() < offset) {
+					lineStart = lineIndex;
+					lineIndex = (lineEnd - lineIndex)/2 + lineIndex;
+				}
+				else {
+					found = true;
+				}
+			}
+			
 			return lineIndex;
 		}
 
@@ -409,12 +414,12 @@ public class LogDocument implements StyledDocument {
 
 		@Override
 		public int getElementIndex(int offset) {
-			// TODO Auto-generated method stub
+			System.out.println("getElementIndex: " + offset);
 			return 0;
 		}
 
 		@Override
-		public int getElementCount() {
+		public final int getElementCount() {
 			return blocks.size();
 		}
 
