@@ -33,25 +33,54 @@ import javax.swing.text.StyledDocument;
 import ch.tarnet.common.Pref;
 import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
 
+/**
+ * Contient toutes les données requises par une SerialConsole pour fonctionner. La majorité des données
+ * sont stocké sous forme de model de données Swing (par ex.: ComboBoxModel, Document)
+ * @author tarrask
+ *
+ */
 public class SerialConsoleModel {
 
 	private static final Logger logger = Logger.getLogger(SerialConsoleModel.class.getName());
 	
+	/** une référence au SerialManager global à toute l'application */
 	private SerialManager manager;
 	
+	/** la fabrique de moteur de script */
 	private ScriptEngineManager scriptEngineFactory;
 
+	/** le port actuellement sélectionné par la comboBox, cette champ est définit dans updateActivePortListener
+	 *  après avoir transférer le activePortListener vers le nouveau port sélectionné */ 
 	private SerialPortDescriptor activePort = null;
+	/** la liste des ports visibles par RXTX, surveillé par le SerialManager et mis à jour par le bias
+	 *  du serialPortListener */
 	private DefaultComboBoxModel<SerialPortDescriptor> availablePorts = new DefaultComboBoxModel<SerialPortDescriptor>();
+	/** la liste des vitesses disponibles TODO devrait être éditable pour accepter n'importe quelle vitesse
+	 *  TODO la liste de base devrait provenir d'un fichier de configuration */
 	private DefaultComboBoxModel<Integer> activePortSpeed = new DefaultComboBoxModel<Integer>(new Integer[] {4800, 9600, 19200, 38400, 57600, 115200, 230400, 250000});
+	/** la l'ensemble des ports actuellement surveillé */
 	private HashSet<SerialPortDescriptor> watchedPorts = new HashSet<SerialPortDescriptor>();
+	/** la map regroupant les ports par nom et la configuration spécifique à la console qui les concerne.
+	 *  On lie la configuration au moyen du nom du port et nom pas du descriptor pour concerver la config
+	 *  même après avoir connecté puis déconnecté un port */
 	private HashMap<String, ConsoleSpecPortDescriptor> knownConfig = new HashMap<String, ConsoleSpecPortDescriptor>();
+	/** Le document contenant l'ensemble du texte affiché par la console. Les capacités du document sont
+	 *  limité à l'ajout en fin de document, TODO la suppression total du contenu et la suppression de ligne pour 
+	 *  se conformer à une limite fixé par l'utilisateur. */
 	private LogDocument logDocument = new LogDocument();
 	
+	/** le style de base utilisé par les messages provenant des ports série */
 	private Style logStyle;
+	/** le style utilisé pour les messages systemes */
 	private Style systemStyle;
 
-	private PlainDocument commandText = new PlainDocument();
+	/** l'action d'ouvrir ou de fermer le port série actif. Si l'ouverture se déroule
+	 *  correctement, le port actif signalera son changement de status par le bais
+	 *  du activePortListener.
+	 *  Le port est automatiquement surveillé par la console l'ayant ouvert.
+	 *  TODO la fin de la surveillance devrait survenir suite au changement de status du port et
+	 *  TODO non lors de la fermeture du port. Afin que toutes les consoles arrêtent de surveiller le
+	 *  TODO port lors de sa fermeture. */
 	private Action openCloseAction = new AbstractAction("Open") {
 		@Override
 		public void actionPerformed(ActionEvent e) {
@@ -66,6 +95,8 @@ public class SerialConsoleModel {
 		}
 	};
 	
+	/** l'action de surveillance d'un port. Les ports surveillés sont affiché dans la console.
+	 *  Les autres sont ignorés */
 	private Action watchUnwatchAction = new AbstractAction("Watch") {
 		@Override 
 		public void actionPerformed(ActionEvent e) {
@@ -81,17 +112,22 @@ public class SerialConsoleModel {
 		}
 	};
 	
+	/** Action permettant de modifier la couleur d'un port. Sont fonctionnement est lié
+	 *  au bouton de type ColorButton. Ces boutons définissent la propriété ACTION_COLOR_KEY
+	 *  pour transmettre la nouvelle couleur choisie */
 	private Action colorAction = new AbstractAction() {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			if(activePort != null) {
-				ConsoleSpecPortDescriptor specDescriptor = knownConfig.get(activePort.getName());
+				ConsoleSpecPortDescriptor specDescriptor = getSpecDescriptor(activePort);
 				specDescriptor.setColor((Color)getValue(ColorButton.ACTION_COLOR_KEY));
 			}
 		}
 	};
 	
-	
+	/** Le document lié au TextField de saisi de commande */
+	private PlainDocument commandText = new PlainDocument();
+
 	private Action sendAction = new AbstractAction("Send") {
 		@Override
 		public void actionPerformed(ActionEvent e) {
@@ -135,60 +171,54 @@ public class SerialConsoleModel {
 	private final SerialMessageListener serialMessageListener = new SerialMessageListener() {
 		@Override
 		public void newSystemMessage(final SerialMessageEvent event) {
-			SwingUtilities.invokeLater(new Runnable() {
-				@Override public void run() {
-					StringBuilder sb = new StringBuilder();
-					try {
-						if(logDocument.getLength() > 0 && !"\n".equals(logDocument.getText(logDocument.getLength()-1, 1))) {
-							sb.append("\n");
-						}
-					}
-					catch(BadLocationException e) {
-						e.printStackTrace();
-					}
-					sb.append(event.getMessage()).append("\n");
-					printText(sb.toString(), systemStyle);
+			StringBuilder sb = new StringBuilder();
+			try {
+				// s'assure que le message apparaisse sur une ligne unique.
+				if(logDocument.getLength() > 0 && !"\n".equals(logDocument.getText(logDocument.getLength()-1, 1))) {
+					sb.append("\n");
 				}
-			});
+			}
+			catch(BadLocationException e) {
+				// ne devrait pas arriver
+				e.printStackTrace();
+			}
+			sb.append(event.getMessage()).append("\n");
+			printText(sb.toString(), systemStyle);
 		}
 
 		@Override
 		public void newSerialMessage(final SerialMessageEvent event) {
 			if(watchedPorts.contains(event.getDescriptor())) {
-				SwingUtilities.invokeLater(new Runnable() {
-					@Override public void run() {
-						SerialPortDescriptor descriptor = event.getDescriptor();
-						ConsoleSpecPortDescriptor specDescriptor = getSpecDescriptor(descriptor);
-						Style style = logDocument.getStyle(descriptor.getName());
-						if(style == null) {
-							style = logDocument.addStyle(descriptor.getName(), logStyle);
-						}
-						StyleConstants.setForeground(style, specDescriptor.getColor());
-						
-						Invocable inv = specDescriptor.getFilter();
-						boolean display = true;
-						String message = event.getMessage();
-						if(inv != null) {
-							try {
-								FilterMessage mes = new FilterMessage(message, style);
-								mes =  (FilterMessage)inv.invokeFunction("filter", mes);
-								display = mes.display;
-								message = mes.message;
-								style = mes.style;
-							} catch (NoSuchMethodException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							} catch (ScriptException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-						}
-						
-						if(display) {
-							printText(message, style);
-						}
+				SerialPortDescriptor descriptor = event.getDescriptor();
+				ConsoleSpecPortDescriptor specDescriptor = getSpecDescriptor(descriptor);
+				Style style = logDocument.getStyle(descriptor.getName());
+				if(style == null) {
+					style = logDocument.addStyle(descriptor.getName(), logStyle);
+				}
+				StyleConstants.setForeground(style, specDescriptor.getColor());
+				
+				Invocable inv = specDescriptor.getFilter();
+				boolean display = true;
+				String message = event.getMessage();
+				if(inv != null) {
+					try {
+						FilterMessage mes = new FilterMessage(message, style);
+						mes =  (FilterMessage)inv.invokeFunction("filter", mes);
+						display = mes.display;
+						message = mes.message;
+						style = mes.style;
+					} catch (NoSuchMethodException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (ScriptException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
-				});
+				}
+				
+				if(display) {
+					printText(message, style);
+				}
 			}
 		}
 	};
@@ -404,27 +434,20 @@ public class SerialConsoleModel {
 	 * @param style le style à employer
 	 * @throws IOException 
 	 */
-	private void printText(String text, Style style) {
-//		try {
-//			logDocument.insertString(logDocument.getLength(), text, style);
-			logDocument.appendString(text, style);
-//			HTMLDocument doc = (HTMLDocument)logDocument;
-//			Color color = (Color)style.getAttribute(StyleConstants.Foreground);
-//			System.out.println(color.toString());
-//			doc.insertBeforeEnd(doc.getElement("body"), "<font color='#f00'>" + text + "</font>");
-//		}
-//		catch(BadLocationException e) {
-//			// ne devrait jamais survenir, ne semble pas grave, au pire aucun text ne sera plus écrit.
-//			// on log l'erreur mais poursuivons l'execution du programme.
-//			logger.warning(e.getMessage());
-//			e.printStackTrace();
-//		} 
-//		catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+	private void printText(final String text, final Style style) {
+		SwingUtilities.invokeLater(new Runnable() {
+			@Override public void run() {
+				logDocument.appendString(text, style);
+			}
+		});
 	}
 
+	/**
+	 * Retour l'objet contenant la config spécifique à un port pour cette console.
+	 * S'il n'existe pas, il est créé avant d'être retourné.
+	 * @param descriptor Le descriptor qui permettera d'identifier le bon descripteur spécifique
+	 * @return le descripteur du port spécifique à cette fenêtre.
+	 */
 	private ConsoleSpecPortDescriptor getSpecDescriptor(SerialPortDescriptor descriptor) {
 		ConsoleSpecPortDescriptor specDescriptor = knownConfig.get(descriptor.getName());
 		if(specDescriptor == null) {
@@ -454,12 +477,6 @@ public class SerialConsoleModel {
 	public Action getColorAction() {
 		return colorAction;
 	}
-	public void setSerialPortColor(Color color) {
-		if(activePort != null) {
-			ConsoleSpecPortDescriptor specDescriptor = knownConfig.get(activePort.getName());
-			specDescriptor.setColor(color);
-		}
-	}
 	public StyledDocument getLogDocument() {
 		return logDocument;
 	}
@@ -474,11 +491,17 @@ public class SerialConsoleModel {
 	}
 	
 	////////////////////////////////////////////////////////////////////////////////////////////
+	/* TODO devrait peut-être disparaitre. */
 	public SerialPortDescriptor getActivePort() {
 		return activePort;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////
+	/**
+	 * Stock les valeurs liés à un port pour une fenêtre donnée.
+	 * @author tarrask
+	 *
+	 */
 	private class ConsoleSpecPortDescriptor {
 		private Color color;
 		private Invocable filter;

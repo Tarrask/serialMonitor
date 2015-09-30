@@ -24,10 +24,15 @@ public class ColorButton extends JButton {
 	public ColorButton(Action action) {
 		iconImage = new BufferedImage(16, 16, BufferedImage.TYPE_INT_RGB);
 		icon = new ImageIcon(iconImage);
-		action.putValue(Action.LARGE_ICON_KEY, icon);
-		action.putValue(Action.SMALL_ICON, icon);
-		super.setAction(action);
+		setAction(action);
 		super.setModel(new ColorButtomModel());
+	}
+	
+	@Override
+	public void setAction(Action a) {
+		a.putValue(Action.LARGE_ICON_KEY, icon);
+		a.putValue(Action.SMALL_ICON, icon);
+		super.setAction(a);
 	}
 	
 	@Override
