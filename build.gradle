@@ -7,7 +7,7 @@ mainClassName = 'ch.tarnet.serialMonitor.Launcher'
 
 repositories {
 //    jcenter()
-//    mavenCentral()
+    mavenCentral()
 //    mavenLocal()
 }
 
