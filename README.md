@@ -13,3 +13,9 @@ de colorer le texte en fonction du port série d'où provient le message.
   ports séries.
 * coloration du texte en fonction du port ayant transmit.
 * et quelques autres trucs pas encore assez fonctionnel pour en parler.
+
+## Eclipse
+Pour accéder à ce projet dans Eclipse :
+1 File -> import ... -> Projects from git -> Clone URI ...
+2 Supprimer le projet du workspace, sans supprimer les fichiers du disque
+3 File -> import ... -> Gradle project
