@@ -21,7 +21,6 @@ import javax.swing.text.ViewFactory;
 import javax.swing.text.Position.Bias;
 import javax.swing.text.View;
 
-import sun.swing.SwingUtilities2;
 import ch.tarnet.serialMonitor.LogDocument.BasicElement;
 
 public class LogView extends View {
@@ -90,13 +89,15 @@ public class LogView extends View {
 	}
 
 	private void paintLine(Graphics g, Element line, int x, int y) {
+		FontMetrics fm = g.getFontMetrics();
 		for(int i = 0; i < line.getElementCount(); i++) {
 			BasicElement block = (BasicElement)line.getElement(i);
 			Color c = (Color)block.getAttributes().getAttribute(StyleConstants.Foreground);
 			String blockText = block.getText(); //getDocument().getText(block.getStartOffset(), block.getEndOffset()-block.getStartOffset());
 			g.setColor(c);
 			g.drawString(blockText, x, y);
-			x += SwingUtilities2.stringWidth((JTextComponent)getContainer(), g.getFontMetrics(), blockText);
+			x += fm.stringWidth(blockText);
+//			x += SwingUtilities2.stringWidth((JTextComponent)getContainer(), g.getFontMetrics(), blockText);
 		}
 	}
 	
