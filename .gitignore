@@ -13,5 +13,5 @@ bin/
 .gradle
 build/
 /local/
-.project
-.classpath
+/.classpath
+/.project
