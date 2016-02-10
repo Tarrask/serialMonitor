@@ -17,18 +17,18 @@ import java.util.Map;
 import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
 
 /**
- * Pièce maitresse du programme, elle maintient la liste des ports série disponibles, centralise 
- * la récupération du contenu des communications et distribue ces messages aux différentes
- * fenêtres (sortie) souhaitant les afficher.
+ * PiÃ¨ce maitresse du programme, elle maintient la liste des ports sÃ©rie disponibles, centralise 
+ * la rÃ©cupÃ©ration du contenu des communications et distribue ces messages aux diffÃ©rentes
+ * fenÃªtres (sortie) souhaitant les afficher.
  * 
- * Cette classe arbitre différents threads permettant un déroulement non-bloquant du reste du programme.
- * Un premier thread, {@link PortWatcher} scrute à interval régulier la disponibilité de ports de 
- * communication serie, déclanchant des évènements lorsque un nouveau port est détecté ou qu'un port est
- * retiré. Les {@link SerialPortListener} permettent d'être prévenu lorsque d'un de ces évènements ce produit.
+ * Cette classe arbitre diffÃ©rents threads permettant un dÃ©roulement non-bloquant du reste du programme.
+ * Un premier thread, {@link PortWatcher} scrute Ã  interval rÃ©gulier la disponibilitÃ© de ports de 
+ * communication serie, dÃ©clanchant des Ã©vÃ¨nements lorsque un nouveau port est dÃ©tectÃ© ou qu'un port est
+ * retirÃ©. Les {@link SerialPortListener} permettent d'Ãªtre prÃ©venu lorsque d'un de ces Ã©vÃ¨nements ce produit.
  * 
- * Un deuxième type de thread est utilisé, les {@link SerialWorker}, un nouveau thread est créé à chaque
- * ouverture d'un port, il a pour mission de gérer l'écoute du port et de transmettre au manager les 
- * messages reçus. Le manager appelle les {@link SerialMessageListener} pour faire suivre ces messages. 
+ * Un deuxiÃ¨me type de thread est utilisÃ©, les {@link SerialWorker}, un nouveau thread est crÃ©Ã© Ã  chaque
+ * ouverture d'un port, il a pour mission de gÃ©rer l'Ã©coute du port et de transmettre au manager les 
+ * messages reÃ§us. Le manager appelle les {@link SerialMessageListener} pour faire suivre ces messages. 
  * 
  * @author tarrask
  *
@@ -50,14 +50,14 @@ public class SerialManager {
 	}
 	
 	public SerialManager(PortWatcher portWatcher) {
-		// démarre le port watcher qui surveille l'état des différents ports série
+		// dÃ©marre le port watcher qui surveille l'Ã©tat des diffÃ©rents ports sÃ©rie
 		this.portWatcher = portWatcher;
 		this.portWatcher.setSerialManager(this);
 		this.portWatcher.start();
 	}
 	/**
 	 * Retourne la liste des ports disponible actuellement en possession du portWatcher.
-	 * Cette fonction ne déclanche pas un refresh.
+	 * Cette fonction ne dÃ©clanche pas un refresh.
 	 * @return
 	 */
 	public List<SerialPortDescriptor> getAvailablePorts() {
@@ -65,20 +65,20 @@ public class SerialManager {
 	}
 	
 	/**
-	 * Indique au PortWatcher qu'il doit interrompre son attente et procéder de suite à la récupération des
-	 * ports série disponible.
+	 * Indique au PortWatcher qu'il doit interrompre son attente et procÃ©der de suite Ã  la rÃ©cupÃ©ration des
+	 * ports sÃ©rie disponible.
 	 */
 	public void refreshPorts() {
 		portWatcher.interrupt();
 	}
 
 	/**
-	 * Ouvre un port série s'il ne l'est pas déjà. Démarre un SerialWorker pour récupérer les données
+	 * Ouvre un port sÃ©rie s'il ne l'est pas dÃ©jÃ©. DÃ©marre un SerialWorker pour rÃ©cupÃ©rer les donnÃ©es
 	 * transmises par le port.
 	 * @param descriptor Tout ce qu'il faut savoir pour ouvrir et configurer le port.
 	 */
 	public void openPort(SerialPortDescriptor descriptor) {
-		// si le port est déjà ouvert par nos soins, on ne fait rien
+		// si le port est dÃ©jÃ  ouvert par nos soins, on ne fait rien
 		if(descriptor.getStatus() == Status.OPEN) {
 			return;
 		}
@@ -88,7 +88,7 @@ public class SerialManager {
 	}
 	
 	/**
-	 * Ferme le port identifié par le descriptor.
+	 * Ferme le port identifiÃ© par le descriptor.
 	 * @param descriptor 
 	 */
 	public void closePort(SerialPortDescriptor descriptor) {
@@ -166,8 +166,8 @@ public class SerialManager {
 		@Override
 		public void run() {
 			BufferedInputStream in;
-			// tente l'ouverture d'un port flux d'entré provenant du port série. En reste là si quoi que ce soit
-			// se déroule mal
+			// tente l'ouverture d'un port flux d'entrÃ© provenant du port sÃ©rie. En reste lÃ  si quoi que ce soit
+			// se dÃ©roule mal
 			try {
 				System.out.println(descriptor.getPortIdentifier().getClass());
 				port = (SerialPort)descriptor.getPortIdentifier().open(getClass().getName(), openIndex++);
@@ -202,7 +202,7 @@ public class SerialManager {
 			descriptor.setStatus(Status.OPEN);
 			manager.fireSystemMessageEvent(descriptor, "Connection with serial port " + descriptor.getName() + " is open.");
 			
-			// On écoute les changements de vitesse
+			// On Ã©coute les changements de vitesse
 			descriptor.addPropertyChangeListener(new PropertyChangeListener() {
 				@Override
 				public void propertyChange(PropertyChangeEvent event) {
@@ -220,7 +220,7 @@ public class SerialManager {
 				}
 			});
 
-			// boucle de lecture, si une erreur survient, on ferme le port simplement. A Chaque série de donnée, on
+			// boucle de lecture, si une erreur survient, on ferme le port simplement. A Chaque sÃ©rie de donnÃ©e, on
 			// envoie un event.
 			try {
 				byte[] buffer = new byte[256];
@@ -234,7 +234,7 @@ public class SerialManager {
 						synchronized(this) {
 							this.wait(1);
 						}
-					} catch (InterruptedException e) { /* ignoré */ }
+					} catch (InterruptedException e) { /* ignorÃ© */ }
 				}
 			}
 			catch(IOException e) {

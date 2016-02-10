@@ -10,7 +10,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.logging.Logger;
 
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
@@ -30,56 +29,59 @@ import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import ch.tarnet.common.Pref;
 import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
 
 /**
- * Contient toutes les données requises par une SerialConsole pour fonctionner. La majorité des données
- * sont stocké sous forme de model de données Swing (par ex.: ComboBoxModel, Document)
+ * Contient toutes les donnÃ©es requises par une SerialConsole pour fonctionner. La majoritÃ© des donnÃ©es
+ * est stockÃ©e sous forme de model de donnÃ©es Swing (par ex.: ComboBoxModel, Document)
  * @author tarrask
  *
  */
 public class SerialConsoleModel {
 
-	private static final Logger logger = Logger.getLogger(SerialConsoleModel.class.getName());
+	private static final Logger logger = LoggerFactory.getLogger(SerialConsoleModel.class.getName());
 	
-	/** une référence au SerialManager global à toute l'application */
+	/** une rÃ©fÃ©rence au SerialManager global Ã  toute l'application */
 	private SerialManager manager;
 	
 	/** la fabrique de moteur de script */
 	private ScriptEngineManager scriptEngineFactory;
 
-	/** le port actuellement sélectionné par la comboBox, cette champ est définit dans updateActivePortListener
-	 *  après avoir transférer le activePortListener vers le nouveau port sélectionné */ 
+	/** le port actuellement sÃ©lectionnÃ© par la comboBox, cette champ est dÃ©finit dans updateActivePortListener
+	 *  aprÃ¨s avoir transfÃ©rer le activePortListener vers le nouveau port sÃ©lectionnÃ© */ 
 	private SerialPortDescriptor activePort = null;
-	/** la liste des ports visibles par RXTX, surveillé par le SerialManager et mis à jour par le bias
+	/** la liste des ports visibles par RXTX, surveillÃ© par le SerialManager et mis Ã  jour par le bias
 	 *  du serialPortListener */
 	private DefaultComboBoxModel<SerialPortDescriptor> availablePorts = new DefaultComboBoxModel<SerialPortDescriptor>();
-	/** la liste des vitesses disponibles TODO devrait être éditable pour accepter n'importe quelle vitesse
+	/** la liste des vitesses disponibles TODO devrait Ãªtre Ã©ditable pour accepter n'importe quelle vitesse
 	 *  TODO la liste de base devrait provenir d'un fichier de configuration */
 	private DefaultComboBoxModel<Integer> activePortSpeed = new DefaultComboBoxModel<Integer>(new Integer[] {4800, 9600, 19200, 38400, 57600, 115200, 230400, 250000});
-	/** la l'ensemble des ports actuellement surveillé */
+	/** la l'ensemble des ports actuellement surveillÃ© */
 	private HashSet<SerialPortDescriptor> watchedPorts = new HashSet<SerialPortDescriptor>();
-	/** la map regroupant les ports par nom et la configuration spécifique à la console qui les concerne.
+	/** la map regroupant les ports par nom et la configuration spÃ©cifique Ã  la console qui les concerne.
 	 *  On lie la configuration au moyen du nom du port et nom pas du descriptor pour concerver la config
-	 *  même après avoir connecté puis déconnecté un port */
+	 *  mÃªme aprÃ¨s avoir connectÃ© puis dÃ©connectÃ© un port */
 	private HashMap<String, ConsoleSpecPortDescriptor> knownConfig = new HashMap<String, ConsoleSpecPortDescriptor>();
-	/** Le document contenant l'ensemble du texte affiché par la console. Les capacités du document sont
-	 *  limité à l'ajout en fin de document, TODO la suppression total du contenu et la suppression de ligne pour 
-	 *  se conformer à une limite fixé par l'utilisateur. */
+	/** Le document contenant l'ensemble du texte affichÃ© par la console. Les capacitÃ©s du document sont
+	 *  limitÃ© Ã  l'ajout en fin de document, TODO la suppression total du contenu et la suppression de ligne pour 
+	 *  se conformer Ã  une limite fixÃ© par l'utilisateur. */
 	private LogDocument logDocument = new LogDocument();
 	
-	/** le style de base utilisé par les messages provenant des ports série */
+	/** le style de base utilisÃ© par les messages provenant des ports sÃ©rie */
 	private Style logStyle;
-	/** le style utilisé pour les messages systemes */
+	/** le style utilisÃ© pour les messages systemes */
 	private Style systemStyle;
 
-	/** l'action d'ouvrir ou de fermer le port série actif. Si l'ouverture se déroule
+	/** l'action d'ouvrir ou de fermer le port sÃ©rie actif. Si l'ouverture se dÃ©roule
 	 *  correctement, le port actif signalera son changement de status par le bais
 	 *  du activePortListener.
-	 *  Le port est automatiquement surveillé par la console l'ayant ouvert.
+	 *  Le port est automatiquement surveillÃ© par la console l'ayant ouvert.
 	 *  TODO la fin de la surveillance devrait survenir suite au changement de status du port et
-	 *  TODO non lors de la fermeture du port. Afin que toutes les consoles arrêtent de surveiller le
+	 *  TODO non lors de la fermeture du port. Afin que toutes les consoles arrÃªtent de surveiller le
 	 *  TODO port lors de sa fermeture. */
 	private Action openCloseAction = new AbstractAction("Open") {
 		@Override
@@ -95,8 +97,8 @@ public class SerialConsoleModel {
 		}
 	};
 	
-	/** l'action de surveillance d'un port. Les ports surveillés sont affiché dans la console.
-	 *  Les autres sont ignorés */
+	/** l'action de surveillance d'un port. Les ports surveillÃ©s sont affichÃ© dans la console.
+	 *  Les autres sont ignorÃ©s */
 	private Action watchUnwatchAction = new AbstractAction("Watch") {
 		@Override 
 		public void actionPerformed(ActionEvent e) {
@@ -112,8 +114,8 @@ public class SerialConsoleModel {
 		}
 	};
 	
-	/** Action permettant de modifier la couleur d'un port. Sont fonctionnement est lié
-	 *  au bouton de type ColorButton. Ces boutons définissent la propriété ACTION_COLOR_KEY
+	/** Action permettant de modifier la couleur d'un port. Sont fonctionnement est liÃ©
+	 *  au bouton de type ColorButton. Ces boutons dÃ©finissent la propriÃ©tÃ© ACTION_COLOR_KEY
 	 *  pour transmettre la nouvelle couleur choisie */
 	private Action colorAction = new AbstractAction() {
 		@Override
@@ -125,7 +127,7 @@ public class SerialConsoleModel {
 		}
 	};
 	
-	/** Le document lié au TextField de saisi de commande */
+	/** Le document liÃ© au TextField de saisi de commande */
 	private PlainDocument commandText = new PlainDocument();
 
 	private Action sendAction = new AbstractAction("Send") {
@@ -136,8 +138,8 @@ public class SerialConsoleModel {
 	};
 
 	/**
-	 * Gère les évenements liés aux ports provenant du SerialManager. Lorsque un nouveau port est
-	 * détecté par le SerialManager, on l'ajoute à la liste de cette fenêtre trié par ordre alphabetique
+	 * GÃ¨re les Ã©venements liÃ©s aux ports provenant du SerialManager. Lorsque un nouveau port est
+	 * dÃ©tectÃ© par le SerialManager, on l'ajoute Ã  la liste de cette fenÃªtre triÃ© par ordre alphabetique
 	 * du nom de ports.
 	 * Si un port n'est plus disponible, on le retire simplement.
 	 */
@@ -146,7 +148,7 @@ public class SerialConsoleModel {
 		public void portAdded(SerialPortEvent event) {
 			SerialPortDescriptor descriptor = event.getDescriptor();
 			
-			// trouve l'index trié
+			// trouve l'index triÃ©
 			int sortIndex = 0;
 			while(sortIndex < availablePorts.getSize() &&
 					descriptor.getName().compareToIgnoreCase(availablePorts.getElementAt(sortIndex).getName()) > 0) {
@@ -166,7 +168,7 @@ public class SerialConsoleModel {
 	};
 	
 	/**
-	 * Gère la reception des messages provenant des ports série géré par le manager
+	 * GÃªre la reception des messages provenant des ports sÃ©rie gÃ©rÃ© par le manager
 	 */
 	private final SerialMessageListener serialMessageListener = new SerialMessageListener() {
 		@Override
@@ -224,7 +226,7 @@ public class SerialConsoleModel {
 	};
 
 	/**
-	 * Gère le ComboBox listant les ports séries disponibles
+	 * GÃ¨re le ComboBox listant les ports sÃ©ries disponibles
 	 */
 	private final ListDataListener selectedPortListener = new ListDataListener() {
 		@Override
@@ -250,12 +252,12 @@ public class SerialConsoleModel {
 	private final ListDataListener selectedSpeedListener = new ListDataListener() {
 		@Override
 		public void intervalRemoved(ListDataEvent e) {
-			logger.info("in selectedSpeedListener.intervalRemoved: Le speed ComboBox n'étant pas modifiable pour l'instant. Ce message ne devrait pas apparaitre.");
+			logger.info("in selectedSpeedListener.intervalRemoved: Le speed ComboBox n'Ã©tant pas modifiable pour l'instant. Ce message ne devrait pas apparaitre.");
 		}
 		
 		@Override
 		public void intervalAdded(ListDataEvent e) {
-			logger.info("in selectedSpeedListener.intervalAdded: Le speed ComboBox n'étant pas modifiable pour l'instant. Ce message ne devrait pas apparaitre.");
+			logger.info("in selectedSpeedListener.intervalAdded: Le speed ComboBox n'Ã©tant pas modifiable pour l'instant. Ce message ne devrait pas apparaitre.");
 		}
 		@Override
 		public void contentsChanged(ListDataEvent e) {
@@ -284,10 +286,10 @@ public class SerialConsoleModel {
 
 		scriptEngineFactory = new ScriptEngineManager();
 		
-		// On initialise et lie les listeners pour les différents model contenant les données
-		// activePort: rien à faire, null au lancement de la console, est défini lors du peuplement des ports disponibles
+		// On initialise et lie les listeners pour les diffÃ©rents model contenant les donnÃ©es
+		// activePort: rien Ã  faire, null au lancement de la console, est dÃ©fini lors du peuplement des ports disponibles
 		
-		// availablePorts: la liste des ports série disponible qu'on peuple avec les valeurs provenant du manager
+		// availablePorts: la liste des ports sÃ©rie disponible qu'on peuple avec les valeurs provenant du manager
 		availablePorts.addListDataListener(selectedPortListener);
 		List<SerialPortDescriptor> ports = this.manager.getAvailablePorts();
 		Collections.sort(ports, new Comparator<SerialPortDescriptor>() {
@@ -299,14 +301,14 @@ public class SerialConsoleModel {
 			availablePorts.addElement(descriptor);
 		}
 		
-		// activePortSpeed: la liste des vitesses disponible, initialisé avec la valeur de l'activePort
+		// activePortSpeed: la liste des vitesses disponible, initialisÃ© avec la valeur de l'activePort
 		activePortSpeed.addListDataListener(selectedSpeedListener);
 		if(activePortSpeed.getSelectedItem() == null) {
 			activePortSpeed.setSelectedItem(Pref.getInt("defaultSerialSpeed", SerialManager.DEFAULT_SPEED));
 			activePortSpeed.setSelectedItem(1000);
 		}
 		
-		// watchedPorts: rien à faire, la liste est vide au lancement de la console
+		// watchedPorts: rien Ã  faire, la liste est vide au lancement de la console
 		
 		// logDocument: initialise les styles
 		logStyle = logDocument.addStyle("log", null);
@@ -317,20 +319,20 @@ public class SerialConsoleModel {
 		systemStyle = logDocument.addStyle("red", logStyle);
 		StyleConstants.setForeground(systemStyle, Color.decode(Pref.getString("defaultSystemForeground", "#aa0000")));
 		
-		// commandText: rien à faire, initialement vide, servira à qqch si l'utilisateur y saisie qqch
+		// commandText: rien Ã  faire, initialement vide, servira Ã  qqch si l'utilisateur y saisie qqch
 		
-		// openCloseAction: rien à faire
+		// openCloseAction: rien Ã  faire
 		
-		// watchUnwatchAction: rien à faire
+		// watchUnwatchAction: rien Ã  faire
 		
-		// colorAction: rien à faire
+		// colorAction: rien Ã  faire
 		
-		// sendAction: rien à faire TODO pour l'instant en tout cas
+		// sendAction: rien Ã  faire TODO pour l'instant en tout cas
 		
 	}
 
 	/**
-	 * met à jour tous les modeles liés au port actif, en commençant par la variable activePort
+	 * met Ã  jour tous les modeles liÃ©s au port actif, en commenÃ§ant par la variable activePort
 	 */
 	private void updateActivePortDependantModels() {
 		updateActivePortListener();
@@ -341,7 +343,7 @@ public class SerialConsoleModel {
 	}
 	
 	/**
-	 * Appelé suite à un changement du port actif, met à jour la variable et transmet le listener
+	 * AppelÃ© suite Ã  un changement du port actif, met Ã  jour la variable et transmet le listener
 	 */
 	private void updateActivePortListener() {
 		SerialPortDescriptor oldDescriptor = activePort;
@@ -357,7 +359,7 @@ public class SerialConsoleModel {
 	}
 
 	/**
-	 * Appelé suite à un changement du port actif
+	 * AppelÃ© suite Ã  un changement du port actif
 	 */
 	private void updateActivePortSpeed() {
 		if(activePort == null) {
@@ -369,8 +371,8 @@ public class SerialConsoleModel {
 	}
 
 	/**
-	 * Appelé suite au changement du port actif, met à jour le bouton open/close en fonction du
-	 * nouveau port série selectionné
+	 * AppelÃ© suite au changement du port actif, met Ã  jour le bouton open/close en fonction du
+	 * nouveau port sÃ©rie selectionnÃ©
 	 */
 	private void updateOpenCloseAction() {
 		if(activePort == null) {
@@ -401,8 +403,8 @@ public class SerialConsoleModel {
 	}
 	
 	/**
-	 * Appelé suite au changement du port actif, met à jour le bouton watch/unwatch en fonction
-	 * du nouveau port sélectionné.
+	 * AppelÃ© suite au changement du port actif, met Ã  jour le bouton watch/unwatch en fonction
+	 * du nouveau port sÃ©lectionnÃ©.
 	 */
 	private void updateWatchUnwatchAction() {
 		if(activePort == null) {
@@ -428,10 +430,10 @@ public class SerialConsoleModel {
 	}
 	
 	/**
-	 * Affiche du text dans la zone de log, le style étant specifié
+	 * Affiche du text dans la zone de log, le style Ã©tant specifiÃ©
 	 * 
-	 * @param text Le texte à afficher
-	 * @param style le style à employer
+	 * @param text Le texte Ã  afficher
+	 * @param style le style Ã  employer
 	 * @throws IOException 
 	 */
 	private void printText(final String text, final Style style) {
@@ -443,10 +445,10 @@ public class SerialConsoleModel {
 	}
 
 	/**
-	 * Retour l'objet contenant la config spécifique à un port pour cette console.
-	 * S'il n'existe pas, il est créé avant d'être retourné.
-	 * @param descriptor Le descriptor qui permettera d'identifier le bon descripteur spécifique
-	 * @return le descripteur du port spécifique à cette fenêtre.
+	 * Retour l'objet contenant la config spÃ©cifique Ã  un port pour cette console.
+	 * S'il n'existe pas, il est crÃ©Ã© avant d'Ãªtre retournÃ©.
+	 * @param descriptor Le descriptor qui permettera d'identifier le bon descripteur spÃ©cifique
+	 * @return le descripteur du port spÃ©cifique Ã  cette fenÃªtre.
 	 */
 	private ConsoleSpecPortDescriptor getSpecDescriptor(SerialPortDescriptor descriptor) {
 		ConsoleSpecPortDescriptor specDescriptor = knownConfig.get(descriptor.getName());
@@ -459,7 +461,7 @@ public class SerialConsoleModel {
 	
 	
 	/**
-	 * Un accès au différent model, utilisé par SerialConsole lors de l'initialisation du GUI
+	 * Un accÃ¨s au diffÃ©rent model, utilisÃ© par SerialConsole lors de l'initialisation du GUI
 	 * @return
 	 */
 	public ComboBoxModel<SerialPortDescriptor> getAvailablePortsModel() {
@@ -491,14 +493,14 @@ public class SerialConsoleModel {
 	}
 	
 	////////////////////////////////////////////////////////////////////////////////////////////
-	/* TODO devrait peut-être disparaitre. */
+	/* TODO devrait peut-Ãªtre disparaitre. */
 	public SerialPortDescriptor getActivePort() {
 		return activePort;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////
 	/**
-	 * Stock les valeurs liés à un port pour une fenêtre donnée.
+	 * Stock les valeurs liÃ©s Ã  un port pour une fenÃªtre donnÃ©e.
 	 * @author tarrask
 	 *
 	 */

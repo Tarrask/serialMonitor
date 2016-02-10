@@ -26,7 +26,7 @@ public class LogDocument implements StyledDocument {
 	private ArrayList<DocumentListener> documentListeners = new ArrayList<DocumentListener>();
 	private ArrayList<UndoableEditListener> undoableEditListeners = new ArrayList<UndoableEditListener>();
 	private HashMap<Object, Object> properties = new HashMap<Object, Object>();
-	// un contexte personel, pour qu'un changement de couleur d'un style ne modifie pas la couleur des autres fenêtres
+	// un contexte personel, pour qu'un changement de couleur d'un style ne modifie pas la couleur des autres fenÃªtres
 	private StyleContext styleContext = new StyleContext();
 	
 	private Position startPosition = new LogPosition(0);
@@ -81,9 +81,9 @@ public class LogDocument implements StyledDocument {
 	}
 	
 	public void appendString(String str, AttributeSet attributes) {
-		// on recherche le premier changement de ligne. Si une nouvelle ligne est trouvé, on découpe la
-		// chaine en deux. Dans un premier temps, on ne s'occupe que de la première partie, à ajouter
-		// à la dernière ligne actuelle.
+		// on recherche le premier changement de ligne. Si une nouvelle ligne est trouvÃ©e, on dÃ©coupe la
+		// chaine en deux. Dans un premier temps, on ne s'occupe que de la premiÃ¨re partie, Ã  ajouter
+		// Ã  la derniÃ¨re ligne actuelle.
 		int firstNewLine = str.indexOf('\n');
 		String nextLine = null;
 		if(firstNewLine >= 0) {
@@ -93,7 +93,7 @@ public class LogDocument implements StyledDocument {
 		
 		text.append(str);
 		
-		// met à jour le model
+		// met Ã  jour le model
 		LineElement lastLine = (LineElement)rootElement.getElement(rootElement.getElementCount()-1);
 		BlockElement lastBlock = null;
 		if(lastLine.getElementCount() > 0) {
@@ -112,7 +112,7 @@ public class LogDocument implements StyledDocument {
 
 		fireDocumentChanged(lastBlock);
 		
-		// Si une deuxième ligne existait dans la chaine à ajouter, on s'en occupe maintenant. Premièrement
+		// Si une deuxiÃ¨me ligne existait dans la chaine Ã  ajouter, on s'en occupe maintenant. PremiÃ¨rement
 		// on ajoute la nouvelle ligne au model.
 		if(nextLine != null) {
 			text.append('\n');
@@ -120,7 +120,7 @@ public class LogDocument implements StyledDocument {
 			rootElement.lines.add(line);
 			fireDocumentChanged(line);
 			
-			// et s'il y a du texte sur cette nouvelle ligne, on l'ajoute aussi, de façon recursive
+			// et s'il y a du texte sur cette nouvelle ligne, on l'ajoute aussi, de faÃ§on recursive
 			if(nextLine.length() > 0) {
 				appendString(nextLine, attributes);
 			}
@@ -321,10 +321,10 @@ public class LogDocument implements StyledDocument {
 		}
 
 		/**
-		 * Recherche la ligne comportant l'offset donné. Cette methode utilise un binary search iteratif pour
-		 * trouver la ligne, cela devient particulièrement intéressant lorsque le nombre de lignes devient important.
-		 * @param offset La position depuis le début du document.
-		 * @return la ligne à laquelle se trouve la position.
+		 * Recherche la ligne comportant l'offset donnÃ©. Cette methode utilise un binary search iteratif pour
+		 * trouver la ligne, cela devient particuliÃ¨rement intÃ©ressant lorsque le nombre de lignes devient important.
+		 * @param offset La position depuis le dÃ©but du document.
+		 * @return la ligne Ã  laquelle se trouve la position.
 		 */
 		@Override
 		public int getElementIndex(int offset) {
@@ -340,7 +340,7 @@ public class LogDocument implements StyledDocument {
 					lineEnd = lineIndex;
 					lineIndex = (lineIndex - lineStart)/2 + lineStart;
 				}
-				// la ligne se trouve après
+				// la ligne se trouve aprï¿½s
 				else if(line.getEndOffset() < offset) {
 					lineStart = lineIndex;
 					lineIndex = (lineEnd - lineIndex)/2 + lineIndex;

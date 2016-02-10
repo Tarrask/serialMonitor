@@ -15,15 +15,15 @@ class PortWatcher extends Thread {
 	 */
 	private SerialManager serialManager;
 	/**
-	 * Le <code>PortWatcher</code> sera en Ècoute temps que <code>keepRunning</code> est vrai.
+	 * Le <code>PortWatcher</code> sera en √©coute temps que <code>keepRunning</code> est vrai.
 	 */
 	private boolean keepRunning = true;
 	/**
-	 * La list des ports dÈtectÈ par le Watcher
+	 * La liste des ports d√©tect√©s par le Watcher
 	 */
 	private HashMap<CommPortIdentifier, SerialPortDescriptor> portsMap = new HashMap<CommPortIdentifier, SerialPortDescriptor>();
 	/**
-	 * la liste suivante dÈtectÈ par le Watcher, on interverti les deux listes pour limiter la crÈation d'objet
+	 * la liste suivante d√©tect√©e par le Watcher, on interverti les deux listes pour limiter la cr√©ation d'objet
 	 * volumineux
 	 */
 	private HashMap<CommPortIdentifier, SerialPortDescriptor> nextPortsMap = new HashMap<CommPortIdentifier, SerialPortDescriptor>();
@@ -44,13 +44,13 @@ class PortWatcher extends Thread {
 	@Override
 	public void run() {
 		while(keepRunning) {
-			// On rÈcupËre la liste des ports com visible par RXTX
+			// On r√©cup√®re la liste des ports com visible par RXTX
 			Enumeration<CommPortIdentifier> ports = getPortIdentifiers();
 			
 			// On test chaque port actuellement visible
 			while(ports.hasMoreElements()) {
 				CommPortIdentifier portId = ports.nextElement();
-				// on ne s'interesse qu'aux ports sÈrie
+				// on ne s'interesse qu'aux ports s√©rie
 				if(portId.getPortType() == CommPortIdentifier.PORT_SERIAL) {
 					if(portsMap.containsKey(portId)) {
 						nextPortsMap.put(portId, portsMap.get(portId));
@@ -64,7 +64,7 @@ class PortWatcher extends Thread {
 				}
 			}
 			
-			// ainsi que ceux qu'on connait dÈj‡
+			// ainsi que ceux qu'on connait d√©j√†
 			for(CommPortIdentifier oldPortId : portsMap.keySet()) {
 				if(nextPortsMap.containsKey(oldPortId)) {
 					// tout va bien
@@ -92,9 +92,9 @@ class PortWatcher extends Thread {
 	}
 	
 	/**
-	 * Juste pour ne pas avoir de warrning dans l'Èditeur et limiter la portÈe de <code>SuppressWarnings</code>
+	 * Juste pour ne pas avoir de warning dans l'√©diteur et limiter la port√©e de <code>SuppressWarnings</code>
 	 * @param e une Enumeration contenant des <code>CommPortIdentifier</code>
-	 * @return l'<code>Enumeration</code> castÈ de faÁon non sure et <code>Enumeration&lt;CommPortIdentifer></code>
+	 * @return l'<code>Enumeration</code> cast√© de fa√ßon non sure en <code>Enumeration&lt;CommPortIdentifer></code>
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected Enumeration<CommPortIdentifier> unsafeCast(Enumeration e) {

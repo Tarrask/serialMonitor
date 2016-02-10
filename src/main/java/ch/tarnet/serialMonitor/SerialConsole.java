@@ -6,7 +6,6 @@ import java.awt.Font;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.logging.Logger;
 
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
@@ -33,20 +32,23 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.StyledDocument;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import ch.tarnet.common.Pref;
 
 /**
- * Une fenêtre permettant d'afficher les communications séries. Plusieurs SerialConsole
- * peuvent être ouverte simultanément, elle partage toute un unique SerialManager, qui
- * gère les communications bas niveau. Cela permet à plusieurs fenêtre d'afficher le même
- * flux alors que les communications séries sont normalement exclusive.
+ * Une fenÃªtre permettant d'afficher les communications sÃ©ries. Plusieurs SerialConsole
+ * peuvent Ãªtre ouverte simultanÃ©ment, elle partage toute un unique SerialManager, qui
+ * gÃ¨re les communications bas niveau. Cela permet Ã  plusieurs fenÃªtres d'afficher le mÃªme
+ * flux alors que les communications sÃ©ries sont normalement exclusive.
  * 
  * @author tarrask
  */
 public class SerialConsole extends JFrame {
 
 	@SuppressWarnings("unused")
-	private static final Logger logger = Logger.getLogger(SerialConsole.class.getName());
+	private static final Logger logger = LoggerFactory.getLogger(SerialConsole.class.getName());
 	
 	/**
 	 * Le manager en charge des communications
@@ -74,7 +76,7 @@ public class SerialConsole extends JFrame {
 	}
 	
 	/**
-	 * Construit toute la fenêtre
+	 * Construit toute la fenï¿½tre
 	 */
 	private void buildGUI() {
 		JComponent mainContainer = (JComponent)this.getContentPane();
@@ -86,7 +88,7 @@ public class SerialConsole extends JFrame {
 		// la barre d'outil
 		mainContainer.add(buildToolBar(), BorderLayout.PAGE_START);
 		
-		// une zone centrale, pour ne pas occuper les bords qui pourrait être utilisé
+		// une zone centrale, pour ne pas occuper les bords qui pourrait Ãªtre utilisÃ©
 		// par la barre d'outil.
 		JPanel centerPanel = new JPanel(new BorderLayout());
 		mainContainer.add(centerPanel, BorderLayout.CENTER);
@@ -96,17 +98,17 @@ public class SerialConsole extends JFrame {
 		bottomBox.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 		centerPanel.add(bottomBox, BorderLayout.PAGE_END);
 		
-		// une checkbox, qui permet de faire défiler le texte
+		// une checkbox, qui permet de faire dÃ©filer le texte
 		autoScrollCheckBox = new JCheckBox("Auto scroll");
 		autoScrollCheckBox.setSelected(Pref.getBoolean("autoScrollSelected", true));
 		bottomBox.add(autoScrollCheckBox);
 		bottomBox.add(Box.createHorizontalStrut(5));
 		
-		// un textField pour pouvoir envoyer du text par les ports séries
+		// un textField pour pouvoir envoyer du text par les ports sÃ©ries
 		bottomBox.add(new JTextField(consoleModel.getCommandModel(), "", 100));
 		bottomBox.add(Box.createHorizontalStrut(5));
 		
-		// le bouton qui déclanche effectivement l'envoi de texte
+		// le bouton qui dÃ©clanche effectivement l'envoi de texte
 		JButton sendButton = new JButton(consoleModel.getSendAction());
 		bottomBox.add(sendButton);
 
@@ -142,7 +144,7 @@ public class SerialConsole extends JFrame {
 	
 	/**
 	 * Construit la barre d'outils
-	 * @return La barre d'outil, prête à être intégrée dans le gui
+	 * @return La barre d'outil, prÃªte Ã  Ãªtre intÃ©grÃ©e dans le gui
 	 */
 	private JToolBar buildToolBar() {
 		toolBar = new JToolBar(this.getTitle() + " toolbar");
@@ -228,8 +230,8 @@ public class SerialConsole extends JFrame {
 	}
 	
 	/**
-	 * Quand la fenêtre est renommé, on renomme aussi la toolbar, comme ça si elle est
-	 * détachée, on sait à quel fenêtre elle se ratache.
+	 * Quand la fenÃªtre est renommÃ©e, on renomme aussi la toolbar, comme Ã§a si elle est
+	 * dÃ©tachÃ©e, on sait Ã  quelle fenÃªtre elle se ratache.
 	 */
 	@Override
 	public void setTitle(String title) {

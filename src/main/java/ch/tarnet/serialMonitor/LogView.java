@@ -7,7 +7,6 @@ import java.awt.Graphics;
 import java.awt.Insets;
 import java.awt.Rectangle;
 import java.awt.Shape;
-import java.util.logging.Logger;
 
 import javax.swing.event.DocumentEvent;
 import javax.swing.text.BadLocationException;
@@ -18,6 +17,10 @@ import javax.swing.text.LayeredHighlighter;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.ViewFactory;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.swing.text.Position.Bias;
 import javax.swing.text.View;
 
@@ -26,7 +29,7 @@ import ch.tarnet.serialMonitor.LogDocument.BasicElement;
 public class LogView extends View {
 
 	@SuppressWarnings("unused")
-	private static final Logger logger = Logger.getLogger(LogView.class.getName());
+	private final Logger logger = LoggerFactory.getLogger(LogView.class.getName());
 	
 	protected Font font;
 	protected FontMetrics metrics;
@@ -42,8 +45,8 @@ public class LogView extends View {
 		font = getContainer().getFont();
 		metrics = getContainer().getFontMetrics(font);
 		lineHeight = metrics.getHeight();
-		// on prend la largeur de 'm' comme largueur pour tous les caractères. Avec une fonte
-		// monospace, ça devrait le faire. getMaxAdvance ne retourne pas toujours la bonne valeur
+		// on prend la largeur de 'm' comme largueur pour tous les caractÃ¨res. Avec une fonte
+		// monospace, Ã§a devrait le faire. getMaxAdvance ne retourne pas toujours la bonne valeur
 		// par exemple avec une font Courier New en 12pt, il retourne 8 au lieu de 7.
 		charWidth = metrics.charWidth('m');
 	}
@@ -131,7 +134,7 @@ public class LogView extends View {
 			if(lineIndex < 0) {
 				return getStartOffset();
 			}
-			// le point est plus bas que le texte, la position se trouve donc à la fin du texte
+			// le point est plus bas que le texte, la position se trouve donc ï¿½ la fin du texte
 			else if(lineIndex >= root.getElementCount()) {
 				return getEndOffset();
 			}
@@ -153,8 +156,8 @@ public class LogView extends View {
 		super.removeUpdate(e, a, f);
 	}
 	/** 
-	 * Met à jour la valeur de la plus longe ligne, en fonction de la longueur de la dernière ligne,
-	 * la seule pouvant être modifiée
+	 * Met Ã  jour la valeur de la plus longe ligne, en fonction de la longueur de la derniÃ¨re ligne,
+	 * la seule pouvant Ãªtre modifiÃ©e
 	 * .
 	 * @see javax.swing.text.View#changedUpdate(javax.swing.event.DocumentEvent, java.awt.Shape, javax.swing.text.ViewFactory)
 	 */

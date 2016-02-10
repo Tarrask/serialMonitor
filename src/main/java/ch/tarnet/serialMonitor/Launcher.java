@@ -10,15 +10,20 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import ch.tarnet.common.Pref;
 
 /**
- * le point d'entrÈe du programme, il crÈÈ juste une premiËre console et attend que
- * la derniËre soit fermÈ pour terminer le programme.
+ * le point d'entr√©e du programme, il cr√©√© juste une premi√®re console et attend que
+ * la derni√®re soit ferm√© pour terminer le programme.
+ * 
  * @author tarrask
- *
  */
 public class Launcher {
+	
+	private final static Logger logger = LoggerFactory.getLogger(Launcher.class);
 	
 	private static Launcher instance;
 	private SerialManager manager;
@@ -57,7 +62,7 @@ public class Launcher {
 	}
 	
 	public void run() {
-		// planifie la crÈation et l'affichage d'une premiËre fenetre console
+		// planifie la cr√©ation et l'affichage d'une premi√®re fen√™tre console
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override public void run() {
 				setSystemLookAndFeel();
@@ -68,28 +73,18 @@ public class Launcher {
 	
 	private void setSystemLookAndFeel() {
 		try {
-            // Set cross-platform Java L&F (also called "Metal")
-	        UIManager.setLookAndFeel(
-	            UIManager.getSystemLookAndFeelClassName());
+	        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 	    } 
-	    catch (UnsupportedLookAndFeelException e) {
-	       // handle exception
-	    }
-	    catch (ClassNotFoundException e) {
-	       // handle exception
-	    }
-	    catch (InstantiationException e) {
-	       // handle exception
-	    }
-	    catch (IllegalAccessException e) {
-	       // handle exception
+	    catch(UnsupportedLookAndFeelException|ClassNotFoundException|InstantiationException|IllegalAccessException e) {
+	    	logger.info("Impossible d'utiliser le look&feel system, celui par d√©faut sera utilis√©", e);
 	    }
 	}
 	
 	/** 
-	 * on crÈÈ une instance et l'execute, pas forcÈment utile pour l'instant ... 
+	 * on cr√©√© une instance et l'execute, pas forc√©ment utile pour l'instant ... 
 	 */
 	public static void main(String[] args) {
+		logger.info("Starting SerialMonitor ...");
 		new Launcher().run();
 	}
 	

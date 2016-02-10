@@ -4,22 +4,24 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
-import java.util.logging.Logger;
 import java.util.prefs.AbstractPreferences;
 import java.util.prefs.BackingStoreException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ApplicationPreferences extends AbstractPreferences {
 
-	private static final Logger logger = Logger.getLogger(ApplicationPreferences.class.getName());
+	private final Logger logger = LoggerFactory.getLogger(ApplicationPreferences.class.getName());
 	
 	/**
 	 * Les 3 fichiers de preferences, celui par defaut, se trouvant avec le code, celui global
-	 * à l'application, se trouvant généralement dans le répertoire de l'application et celui
-	 * de l'utilisateur, qui réside en principe dans le dossier de l'utilisateur
+	 * ï¿½ l'application, se trouvant gï¿½nï¿½ralement dans le rï¿½pertoire de l'application et celui
+	 * de l'utilisateur, qui rï¿½side en principe dans le dossier de l'utilisateur
 	 */
 	private Properties defaultProperties, applicationProperties, userProperties;
 	/**
-	 * Une référence aux fichiers de preferences utilisé pour les preferences de l'application
+	 * Une rï¿½fï¿½rence aux fichiers de preferences utilisï¿½ pour les preferences de l'application
 	 * ainsi que celle de l'utilisateur.
 	 */
 	private File applicationFile, userFile;
@@ -28,20 +30,20 @@ public class ApplicationPreferences extends AbstractPreferences {
 	 * Construit un ApplicationPreference, charge les 3 fichiers de configuration.
 	 * 
 	 * Le fichier des preferences par defaut doit se trouver dans le classpath, par default, il
-	 * se trouve à la racine du classpath et se nomme default.config. Le nom et l'emplacement du
-	 * fichier peut être modifié grace à la propriété system java.util.prefs.PreferencesFactory.defaultFile.
-	 * Il est localisé au moyen de ClassLoader.getSystemResource.
+	 * se trouve ï¿½ la racine du classpath et se nomme default.config. Le nom et l'emplacement du
+	 * fichier peut ï¿½tre modifiï¿½ grace ï¿½ la propriï¿½tï¿½ system java.util.prefs.PreferencesFactory.defaultFile.
+	 * Il est localisï¿½ au moyen de ClassLoader.getSystemResource.
 	 * 
-	 * Le fichier des preferences de l'application se trouve par défaut à la racine de l'application
-	 * et se nomme application.config. L'emplacement et le nom du fichier peuvent être modifié
+	 * Le fichier des preferences de l'application se trouve par dï¿½faut ï¿½ la racine de l'application
+	 * et se nomme application.config. L'emplacement et le nom du fichier peuvent ï¿½tre modifiï¿½
 	 * en utilisant la preference applicationConfigFile qui doit se trouver dans le fichier de config
 	 * par defaut.
 	 * 
-	 * Le fichier utilisateur se trouve par défaut dans le dossier utilisateur et se nomme .unnamedJavaApp.config
-	 * L'emplacement et le nom peuvent être modifié grace à la preference userConfigFile, qui peut se
-	 * trouvé dans le fichier par defaut ou dans celui de l'application, la preference de l'application
-	 * prenant le dessus. Dans le chemin d'accès au fichier, la chaine "%user.dir%" sera remplacé par la
-	 * propriété system user.home (System.getProperty("user.home");
+	 * Le fichier utilisateur se trouve par dï¿½faut dans le dossier utilisateur et se nomme .unnamedJavaApp.config
+	 * L'emplacement et le nom peuvent ï¿½tre modifiï¿½ grace ï¿½ la preference userConfigFile, qui peut se
+	 * trouvï¿½ dans le fichier par defaut ou dans celui de l'application, la preference de l'application
+	 * prenant le dessus. Dans le chemin d'accï¿½s au fichier, la chaine "%user.dir%" sera remplacï¿½ par la
+	 * propriï¿½tï¿½ system user.home (System.getProperty("user.home");
 	 * @throws IOException
 	 */
 	public ApplicationPreferences() throws IOException {
@@ -52,7 +54,7 @@ public class ApplicationPreferences extends AbstractPreferences {
 		defaultProperties = new Properties();
 		defaultProperties.load(ClassLoader.getSystemResourceAsStream(path));
 		
-		// on charge le fichier de properties de l'application, modifiant les paramètres pour tous
+		// on charge le fichier de properties de l'application, modifiant les paramï¿½tres pour tous
 		// les utilisateurs du system.
 		path = defaultProperties.getProperty("applicationConfigFile", "application.config");
 		applicationFile = new File(path);
@@ -63,17 +65,17 @@ public class ApplicationPreferences extends AbstractPreferences {
 				applicationProperties.load(new FileInputStream(applicationFile));
 			}
 			catch(IOException e) {
-				logger.warning("Unable to read application preference file at: " + path);			
+				logger.warn("Unable to read application preference file at: {}", path);			
 			}
 		}
 		
-		// on charge le fichier de properties de l'utilisateur, normalement dans le répertoire utilisateur
+		// on charge le fichier de properties de l'utilisateur, normalement dans le rï¿½pertoire utilisateur
 		// A nouveau, pas grave si le fichier n'existe pas.
 		path = applicationProperties.getProperty("userConfigFile", 
 					defaultProperties.getProperty("userConfigFile", "%user.home%/.unnamedJavaApp.config"));
 		String userHome = System.getProperty("user.home").replaceAll("\\\\", "/");
 		path = path.replaceFirst("%user\\.dir%", userHome);
-		logger.config("user config: " + path);
+		logger.debug("user config: {}", path);
 		userFile = new File(path);
 		userProperties = new Properties();
 		if(userFile.exists()) {
