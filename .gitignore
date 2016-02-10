@@ -13,10 +13,5 @@ bin/
 .gradle
 build/
 /local/
-<<<<<<< HEAD
 .project
 .classpath
-=======
-/.project
-/.classpath
->>>>>>> branch 'master' of git@github.com:Tarrask/serialMonitor.git
