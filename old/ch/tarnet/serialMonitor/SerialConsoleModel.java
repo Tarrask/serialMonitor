@@ -33,7 +33,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ch.tarnet.common.Pref;
-import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
+import ch.tarnet.serialMonitor.services.DefaultSerialPortDescriptor;
+import ch.tarnet.serialMonitor.services.SerialMessageEvent;
+import ch.tarnet.serialMonitor.services.SerialMessageListener;
+import ch.tarnet.serialMonitor.services.SerialPortDescriptor;
+import ch.tarnet.serialMonitor.services.SerialPortEvent;
+import ch.tarnet.serialMonitor.services.SerialPortListener;
+import ch.tarnet.serialMonitor.view.ColorButton;
+import ch.tarnet.serialMonitor.view.LogDocument;
+import ch.tarnet.serialMonitor.services.SerialPortDescriptor.Status;
 
 /**
  * Contient toutes les données requises par une SerialConsole pour fonctionner. La majorité des données
@@ -41,6 +49,7 @@ import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
  * @author tarrask
  *
  */
+@Deprecated
 public class SerialConsoleModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(SerialConsoleModel.class.getName());
@@ -56,12 +65,12 @@ public class SerialConsoleModel {
 	private SerialPortDescriptor activePort = null;
 	/** la liste des ports visibles par RXTX, surveillé par le SerialManager et mis à jour par le bias
 	 *  du serialPortListener */
-	private DefaultComboBoxModel<SerialPortDescriptor> availablePorts = new DefaultComboBoxModel<SerialPortDescriptor>();
+	private DefaultComboBoxModel<SerialPortDescriptor> availablePorts = new DefaultComboBoxModel<>();
 	/** la liste des vitesses disponibles TODO devrait être éditable pour accepter n'importe quelle vitesse
 	 *  TODO la liste de base devrait provenir d'un fichier de configuration */
 	private DefaultComboBoxModel<Integer> activePortSpeed = new DefaultComboBoxModel<Integer>(new Integer[] {4800, 9600, 19200, 38400, 57600, 115200, 230400, 250000});
 	/** la l'ensemble des ports actuellement surveillé */
-	private HashSet<SerialPortDescriptor> watchedPorts = new HashSet<SerialPortDescriptor>();
+	private HashSet<SerialPortDescriptor> watchedPorts = new HashSet<>();
 	/** la map regroupant les ports par nom et la configuration spécifique à la console qui les concerne.
 	 *  On lie la configuration au moyen du nom du port et nom pas du descriptor pour concerver la config
 	 *  même après avoir connecté puis déconnecté un port */
@@ -146,7 +155,7 @@ public class SerialConsoleModel {
 	private final SerialPortListener serialPortlistener = new SerialPortListener() {
 		@Override 
 		public void portAdded(SerialPortEvent event) {
-			SerialPortDescriptor descriptor = event.getDescriptor();
+			SerialPortDescriptorImpl descriptor = event.getDescriptor();
 			
 			// trouve l'index trié
 			int sortIndex = 0;
@@ -162,7 +171,7 @@ public class SerialConsoleModel {
 
 		@Override
 		public void portRemoved(SerialPortEvent event) {
-			SerialPortDescriptor descriptor = event.getDescriptor();
+			SerialPortDescriptorImpl descriptor = event.getDescriptor();
 			availablePorts.removeElement(descriptor);
 		}
 	};
@@ -191,7 +200,7 @@ public class SerialConsoleModel {
 		@Override
 		public void newSerialMessage(final SerialMessageEvent event) {
 			if(watchedPorts.contains(event.getDescriptor())) {
-				SerialPortDescriptor descriptor = event.getDescriptor();
+				SerialPortDescriptorImpl descriptor = event.getDescriptor();
 				ConsoleSpecPortDescriptor specDescriptor = getSpecDescriptor(descriptor);
 				Style style = logDocument.getStyle(descriptor.getName());
 				if(style == null) {
@@ -262,7 +271,7 @@ public class SerialConsoleModel {
 		@Override
 		public void contentsChanged(ListDataEvent e) {
 			if(activePort != null) {
-				activePort.setSpeed((Integer)activePortSpeed.getSelectedItem());
+				((DefaultSerialPortDescriptor)activePort).setSpeed((Integer)activePortSpeed.getSelectedItem());
 			}
 		}
 	};
@@ -291,7 +300,7 @@ public class SerialConsoleModel {
 		
 		// availablePorts: la liste des ports série disponible qu'on peuple avec les valeurs provenant du manager
 		availablePorts.addListDataListener(selectedPortListener);
-		List<SerialPortDescriptor> ports = this.manager.getAvailablePorts();
+		List<? extends SerialPortDescriptor> ports = this.manager.getAvailablePorts();
 		Collections.sort(ports, new Comparator<SerialPortDescriptor>() {
 			@Override public int compare(SerialPortDescriptor o1, SerialPortDescriptor o2) {
 				return o1.getName().compareToIgnoreCase(o2.getName());
@@ -482,9 +491,9 @@ public class SerialConsoleModel {
 	public StyledDocument getLogDocument() {
 		return logDocument;
 	}
-	public void setLogDocument(LogDocument logDocument) {
-		this.logDocument = logDocument;
-	}
+//	public void setLogDocument(LogDocument logDocument) {
+//		this.logDocument = logDocument;
+//	}
 	public Document getCommandModel() {
 		return commandText;
 	}
@@ -525,21 +534,6 @@ public class SerialConsoleModel {
 			catch(ScriptException e) {
 				System.err.println(e.getMessage());
 			}
-		}
-		
-		public void setFilter(String filter) {
-			try {
-				ScriptEngine engine = scriptEngineFactory.getEngineByName("JavaScript");
-				engine.eval(filter);
-				this.filter = (Invocable) engine;
-			} catch (ScriptException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		
-		public void setFilter(Invocable filter) {
-			this.filter = filter;
 		}
 		
 		public Invocable getFilter() {

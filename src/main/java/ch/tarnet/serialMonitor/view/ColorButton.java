@@ -1,4 +1,4 @@
-package ch.tarnet.serialMonitor;
+package ch.tarnet.serialMonitor.view;
 
 import java.awt.Color;
 import java.awt.Graphics2D;

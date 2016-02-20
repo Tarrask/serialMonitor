@@ -14,7 +14,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
+import ch.tarnet.serialMonitor.services.SerialMessageEvent;
+import ch.tarnet.serialMonitor.services.SerialMessageListener;
+import ch.tarnet.serialMonitor.services.SerialPortDescriptor;
+import ch.tarnet.serialMonitor.services.SerialPortEvent;
+import ch.tarnet.serialMonitor.services.SerialPortListener;
+import ch.tarnet.serialMonitor.services.SerialPortDescriptor.Status;
+import ch.tarnet.serialMonitor.services.rxtx.RxtxPortWatcher;
+import ch.tarnet.serialMonitor.services.rxtx.RxtxSerialService;
 
 /**
  * Pièce maitresse du programme, elle maintient la liste des ports série disponibles, centralise 
@@ -22,7 +29,7 @@ import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
  * fenêtres (sortie) souhaitant les afficher.
  * 
  * Cette classe arbitre différents threads permettant un déroulement non-bloquant du reste du programme.
- * Un premier thread, {@link PortWatcher} scrute à interval régulier la disponibilité de ports de 
+ * Un premier thread, {@link RxtxPortWatcher} scrute à interval régulier la disponibilité de ports de 
  * communication serie, déclanchant des évènements lorsque un nouveau port est détecté ou qu'un port est
  * retiré. Les {@link SerialPortListener} permettent d'être prévenu lorsque d'un de ces évènements ce produit.
  * 
@@ -33,7 +40,8 @@ import ch.tarnet.serialMonitor.SerialPortDescriptor.Status;
  * @author tarrask
  *
  */
-public class SerialManager {
+@Deprecated
+public class SerialManager extends RxtxSerialService {
 	public static final int PORT_WATCHER_WAIT = 60000;
 	public static final int DEFAULT_SPEED = 9600;
 	private static final Charset UTF8 = Charset.forName("utf8");
@@ -42,14 +50,14 @@ public class SerialManager {
 	private List<SerialMessageListener> messageListeners = new ArrayList<SerialMessageListener>();
 	private List<SerialPortListener> portListeners = new ArrayList<SerialPortListener>();
 
-	private PortWatcher portWatcher;
-	private Map<SerialPortDescriptor, SerialWorker> workers = new HashMap<SerialPortDescriptor, SerialManager.SerialWorker>();
+	private RxtxPortWatcher portWatcher;
+	private Map<SerialPortDescriptorImpl, SerialWorker> workers = new HashMap<SerialPortDescriptorImpl, SerialManager.SerialWorker>();
 	
 	public SerialManager() {
-		this(new PortWatcher());
+		this(new RxtxPortWatcher());
 	}
 	
-	public SerialManager(PortWatcher portWatcher) {
+	public SerialManager(RxtxPortWatcher portWatcher) {
 		// démarre le port watcher qui surveille l'état des différents ports série
 		this.portWatcher = portWatcher;
 		this.portWatcher.setSerialManager(this);
@@ -60,7 +68,7 @@ public class SerialManager {
 	 * Cette fonction ne déclanche pas un refresh.
 	 * @return
 	 */
-	public List<SerialPortDescriptor> getAvailablePorts() {
+	public List<? extends SerialPortDescriptor> getAvailablePorts() {
 		return portWatcher.getAvailablePorts();
 	}
 	
@@ -77,7 +85,7 @@ public class SerialManager {
 	 * transmises par le port.
 	 * @param descriptor Tout ce qu'il faut savoir pour ouvrir et configurer le port.
 	 */
-	public void openPort(SerialPortDescriptor descriptor) {
+	public void openPort(SerialPortDescriptorImpl descriptor) {
 		// si le port est déjà ouvert par nos soins, on ne fait rien
 		if(descriptor.getStatus() == Status.OPEN) {
 			return;
@@ -91,7 +99,7 @@ public class SerialManager {
 	 * Ferme le port identifié par le descriptor.
 	 * @param descriptor 
 	 */
-	public void closePort(SerialPortDescriptor descriptor) {
+	public void closePort(SerialPortDescriptorImpl descriptor) {
 		// recherche le worker qui aurait ouvert le port
 		SerialWorker worker = workers.get(descriptor);
 		if(worker != null) {
@@ -115,28 +123,28 @@ public class SerialManager {
 	}
 	
 	
-	private void fireSystemMessageEvent(SerialPortDescriptor descriptor, String message) {
+	private void fireSystemMessageEvent(SerialPortDescriptorImpl descriptor, String message) {
 		SerialMessageEvent event = new SerialMessageEvent(System.currentTimeMillis(), descriptor, message);
 		for(SerialMessageListener listener : messageListeners) {
 			listener.newSystemMessage(event);
 		}
 	}
 	
-	private void fireSerialMessageEvent(SerialPortDescriptor descriptor, String message) {
+	private void fireSerialMessageEvent(SerialPortDescriptorImpl descriptor, String message) {
 		SerialMessageEvent event = new SerialMessageEvent(System.currentTimeMillis(), descriptor, message);
 		for(SerialMessageListener listener : messageListeners) {
 			listener.newSerialMessage(event);
 		}
 	}
 
-	public void firePortAddedEvent(SerialPortDescriptor descriptor) {
+	public void firePortAddedEvent(SerialPortDescriptorImpl descriptor) {
 		SerialPortEvent event = new SerialPortEvent(descriptor);
 		for(SerialPortListener listener : portListeners) {
 			listener.portAdded(event);
 		}
 	}
 
-	public void firePortRemovedEvent(SerialPortDescriptor descriptor) {
+	public void firePortRemovedEvent(SerialPortDescriptorImpl descriptor) {
 		SerialPortEvent event = new SerialPortEvent(descriptor);
 		for(SerialPortListener listener : portListeners) {
 			listener.portRemoved(event);
@@ -148,12 +156,12 @@ public class SerialManager {
 		private static int openIndex = 0;
 		
 		private SerialManager manager;
-		private SerialPortDescriptor descriptor;
+		private SerialPortDescriptorImpl descriptor;
 		private SerialPort port;
 		
 		private boolean keepRunning = true;
 		
-		public SerialWorker(SerialManager manager, SerialPortDescriptor descriptor) {
+		public SerialWorker(SerialManager manager, SerialPortDescriptorImpl descriptor) {
 			this.setDaemon(false);
 			this.manager = manager;
 			this.descriptor = descriptor;

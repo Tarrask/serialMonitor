@@ -6,7 +6,9 @@ import gnu.io.FakeIdentifier;
 import java.util.Enumeration;
 import java.util.Vector;
 
-public class FakePortWatcher extends PortWatcher {
+import ch.tarnet.serialMonitor.services.rxtx.RxtxPortWatcher;
+
+public class FakePortWatcher extends RxtxPortWatcher {
 	protected Enumeration<CommPortIdentifier> getPortIdentifiers()  {
 		Vector<CommPortIdentifier> v = new Vector<CommPortIdentifier>();
 		Enumeration<CommPortIdentifier> e = unsafeCast(CommPortIdentifier.getPortIdentifiers());

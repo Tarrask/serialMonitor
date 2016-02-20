@@ -1,10 +1,12 @@
-package ch.tarnet.serialMonitor;
+package ch.tarnet.serialMonitor.view.ui;
 
 import javax.swing.JComponent;
 import javax.swing.plaf.ComponentUI;
 import javax.swing.plaf.basic.BasicTextUI;
 import javax.swing.text.Element;
 import javax.swing.text.View;
+
+import ch.tarnet.serialMonitor.view.LogView;
 
 public class LogPaneUI extends BasicTextUI {
 	

@@ -1,9 +1,8 @@
-package ch.tarnet.serialMonitor;
+package ch.tarnet.serialMonitor.view;
 
 import java.awt.Color;
 import java.awt.Font;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 
 import javax.swing.event.DocumentEvent;
