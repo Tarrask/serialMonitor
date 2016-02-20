@@ -4,6 +4,8 @@ import java.util.logging.Logger;
 
 import javax.swing.text.Element;
 
+import ch.tarnet.serialMonitor.view.LogDocument;
+
 public class BenchLogDocument {
 	@SuppressWarnings("unused")
 	private static final Logger logger = Logger.getLogger(BenchLogDocument.class.getName());

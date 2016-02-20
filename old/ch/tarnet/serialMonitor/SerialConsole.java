@@ -36,6 +36,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ch.tarnet.common.Pref;
+import ch.tarnet.serialMonitor.services.SerialPortDescriptor;
+import ch.tarnet.serialMonitor.view.ColorButton;
+import ch.tarnet.serialMonitor.view.LogPane;
 
 /**
  * Une fenêtre permettant d'afficher les communications séries. Plusieurs SerialConsole
@@ -45,6 +48,7 @@ import ch.tarnet.common.Pref;
  * 
  * @author tarrask
  */
+@Deprecated
 public class SerialConsole extends JFrame {
 
 	@SuppressWarnings("unused")
@@ -148,7 +152,7 @@ public class SerialConsole extends JFrame {
 	 */
 	private JToolBar buildToolBar() {
 		toolBar = new JToolBar(this.getTitle() + " toolbar");
-		final JComboBox<SerialPortDescriptor> tb = new JComboBox<SerialPortDescriptor>(consoleModel.getAvailablePortsModel());
+		final JComboBox<SerialPortDescriptor> tb = new JComboBox<>(consoleModel.getAvailablePortsModel());
 		toolBar.add(tb);
 			tb.setMaximumSize(new Dimension(Pref.getInt("serialPortComboWidth", 100), Integer.MAX_VALUE));
 		toolBar.add(new JButton(refreshPortAction));

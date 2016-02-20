@@ -9,6 +9,8 @@ import javax.swing.text.Style;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import ch.tarnet.serialMonitor.view.LogDocument;
+
 public class TestLogDocument {
 
 	@BeforeClass
@@ -59,7 +61,7 @@ public class TestLogDocument {
 		Style style = doc.getStyle("default");
 		Style red = doc.addStyle("red", style);
 		
-		// première ajout, sans nouvelle ligne
+		// premiï¿½re ajout, sans nouvelle ligne
 		String str1 = "Hello world";
 		int strLength = str1.length();
 		doc.appendString(str1, style);
@@ -79,7 +81,7 @@ public class TestLogDocument {
 		assertEquals(strLength, line.getEndOffset());
 		assertEquals(1,			line.getElementCount());
 		
-		// ajout même style même ligne
+		// ajout mï¿½me style mï¿½me ligne
 		String str2 = " of tomorrow.";
 		strLength += str2.length();
 		doc.appendString(str2, style);
@@ -99,7 +101,7 @@ public class TestLogDocument {
 		assertEquals(strLength, line.getEndOffset());
 		assertEquals(1,			line.getElementCount());
 		
-		// ajout différents styles, même ligne
+		// ajout diffï¿½rents styles, mï¿½me ligne
 		String str3 = " IMPORTANT";
 		strLength += str3.length();
 		doc.appendString(str3, red);
@@ -119,7 +121,7 @@ public class TestLogDocument {
 		assertEquals(strLength, line.getEndOffset());
 		assertEquals(2,			line.getElementCount());
 		
-		// même style, nouvelle ligne à la fin
+		// mï¿½me style, nouvelle ligne ï¿½ la fin
 		String str4 = " take care\n";
 		strLength += str4.length();
 		int line2Start = strLength;
@@ -146,7 +148,7 @@ public class TestLogDocument {
 		assertEquals(line2Start, line.getEndOffset());
 		assertEquals(0, 		 line.getElementCount());
 		
-		// un premier ajout sans nouvelle ligne sur la 2ème ligne
+		// un premier ajout sans nouvelle ligne sur la 2ï¿½me ligne
 		String str5 = "Monster count: ";
 		strLength += str5.length();
 		doc.appendString(str5, style);
@@ -172,7 +174,7 @@ public class TestLogDocument {
 		assertEquals(strLength,  line.getEndOffset());
 		assertEquals(1, 		 line.getElementCount());
 		
-		// même style, avec un retour au milieu de ligne
+		// mï¿½me style, avec un retour au milieu de ligne
 		String str6_1 = "26";
 		String str6_2 = "Kill count: ";
 		String str6 = str6_1 + "\n" + str6_2;

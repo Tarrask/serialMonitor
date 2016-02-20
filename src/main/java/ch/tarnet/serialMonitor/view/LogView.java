@@ -1,4 +1,4 @@
-package ch.tarnet.serialMonitor;
+package ch.tarnet.serialMonitor.view;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -21,15 +21,15 @@ import javax.swing.text.ViewFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ch.tarnet.serialMonitor.view.LogDocument.BasicElement;
+
 import javax.swing.text.Position.Bias;
 import javax.swing.text.View;
-
-import ch.tarnet.serialMonitor.LogDocument.BasicElement;
 
 public class LogView extends View {
 
 	@SuppressWarnings("unused")
-	private final Logger logger = LoggerFactory.getLogger(LogView.class.getName());
+	private final Logger logger = LoggerFactory.getLogger(LogView.class);
 	
 	protected Font font;
 	protected FontMetrics metrics;
@@ -134,7 +134,7 @@ public class LogView extends View {
 			if(lineIndex < 0) {
 				return getStartOffset();
 			}
-			// le point est plus bas que le texte, la position se trouve donc � la fin du texte
+			// le point est plus bas que le texte, la position se trouve donc à la fin du texte
 			else if(lineIndex >= root.getElementCount()) {
 				return getEndOffset();
 			}
